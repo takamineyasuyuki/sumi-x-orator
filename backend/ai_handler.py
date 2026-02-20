@@ -5,6 +5,8 @@ Gemini 1.5 Flash with professional restaurant server persona.
 
 import os
 import logging
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import google.generativeai as genai
 
@@ -38,7 +40,10 @@ SYSTEM_TEMPLATE = """\
 5. 店長のこだわり: メニューデータに「Chef's note」がある場合、自然な会話の中で言及せよ。
 6. 簡潔さ: 2-4文程度で簡潔に。長文は避けるが、料理の魅力は十分に伝えよ。
 7. 予約: 予約に関する質問にはレストラン情報にある予約方法（電話番号やOpenTable等）を案内せよ。
-8. フォーマット禁止: Markdown記法（**太字**、[リンク](URL)、# 見出し等）は絶対に使うな。プレーンテキストのみで返答せよ。\
+8. フォーマット禁止: Markdown記法（**太字**、[リンク](URL)、# 見出し等）は絶対に使うな。プレーンテキストのみで返答せよ。
+9. 時間帯メニュー: カテゴリ名が「Lunch」で始まるメニュー（Lunch Teishoku, Lunch Yoshoku, Lunch Donburi, Lunch Izakaya）はランチタイム（11:30-14:00）のみ提供。
+   ディナータイム（17:00以降）にはこれらを勧めるな。逆にOden等のディナー限定メニューはランチタイムに勧めるな。
+   ドリンク、Appetizer、Side、Sweet、Happy Hourは終日提供。\
 """
 
 
@@ -91,8 +96,11 @@ class AIHandler:
                     role = "model" if msg["role"] == "assistant" else "user"
                     gemini_history.append({"role": role, "parts": [msg["content"]]})
 
+            now = datetime.now(ZoneInfo("America/Vancouver"))
+            time_prefix = f"[Current time: {now.strftime('%A %I:%M %p')}] "
+
             chat = self.model.start_chat(history=gemini_history)
-            response = chat.send_message(user_message)
+            response = chat.send_message(time_prefix + user_message)
             return response.text.strip()
         except Exception:
             logger.exception("Gemini API error")
