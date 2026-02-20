@@ -11,21 +11,24 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from database import MenuDatabase
 from ai_handler import AIHandler
+from tts_handler import TTSHandler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 db: MenuDatabase | None = None
 ai: AIHandler | None = None
+tts: TTSHandler | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global db, ai
+    global db, ai, tts
     logger.info("Starting SUMI X Orator API ...")
     try:
         db = MenuDatabase()
@@ -39,6 +42,12 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.exception("Gemini init failed")
         ai = None
+    try:
+        tts = TTSHandler()
+        logger.info("Google Cloud TTS ready.")
+    except Exception:
+        logger.exception("TTS init failed")
+        tts = None
     logger.info("Startup complete.")
     yield
     logger.info("Shutting down.")
@@ -73,6 +82,11 @@ class ChatResponse(BaseModel):
     menu_items: list[dict] = []
 
 
+class TTSRequest(BaseModel):
+    text: str
+    lang: str = "ja-JP"
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -96,6 +110,18 @@ async def chat(req: ChatRequest):
     menu_items = db.find_mentioned_items(reply) if db else []
 
     return ChatResponse(reply=reply, menu_items=menu_items)
+
+
+@app.post("/api/tts")
+async def text_to_speech(req: TTSRequest):
+    if not tts:
+        raise HTTPException(status_code=503, detail="TTS not initialized")
+    try:
+        audio = tts.synthesize(req.text, req.lang)
+        return Response(content=audio, media_type="audio/mpeg")
+    except Exception:
+        logger.exception("TTS synthesis failed")
+        raise HTTPException(status_code=500, detail="TTS synthesis failed")
 
 
 @app.get("/api/menu")

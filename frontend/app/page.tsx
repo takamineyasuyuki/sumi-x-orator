@@ -88,14 +88,13 @@ export default function Home() {
   // TTS (Text-to-Speech)
   // ------------------------------------------------------------------
   const speak = useCallback(
-    (text: string) => {
-      if (!ttsEnabled || typeof window === "undefined") return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
+    async (text: string) => {
+      if (!ttsEnabled) return;
+
       const hasJapanese = /[\u3040-\u309f\u30a0-\u30ff]/.test(text);
       const hasKorean = /[\uac00-\ud7af\u1100-\u11ff]/.test(text);
       const hasChinese = /[\u4e00-\u9fff]/.test(text) && !hasJapanese;
-      utterance.lang = hasJapanese
+      const lang = hasJapanese
         ? "ja-JP"
         : hasKorean
         ? "ko-KR"
@@ -106,10 +105,29 @@ export default function Home() {
         : sttLang === "pt-BR"
         ? "pt-BR"
         : "en-US";
-      utterance.rate = 1.0;
-      window.speechSynthesis.speak(utterance);
+
+      try {
+        const res = await fetch(`${API_URL}/api/tts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, lang }),
+        });
+        if (!res.ok) throw new Error("TTS API error");
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.onended = () => URL.revokeObjectURL(url);
+        audio.play();
+      } catch {
+        // Fallback: browser built-in TTS
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.rate = 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
     },
-    [ttsEnabled]
+    [ttsEnabled, sttLang]
   );
 
   // ------------------------------------------------------------------
