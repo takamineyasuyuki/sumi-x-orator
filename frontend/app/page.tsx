@@ -157,6 +157,9 @@ export default function Home() {
           body: JSON.stringify({ message: text.trim(), history }),
         });
 
+        if (res.status === 429) {
+          throw new Error("RATE_LIMIT");
+        }
         if (!res.ok) throw new Error("API error");
         const data = await res.json();
 
@@ -169,14 +172,16 @@ export default function Home() {
         };
         setMessages((prev) => [...prev, aiMsg]);
         speak(data.reply);
-      } catch {
+      } catch (err) {
+        const isRateLimit = err instanceof Error && err.message === "RATE_LIMIT";
         setMessages((prev) => [
           ...prev,
           {
             id: (Date.now() + 1).toString(),
             role: "assistant",
-            content:
-              "申し訳ございません、接続エラーが発生しました。もう一度お試しください。",
+            content: isRateLimit
+              ? "ご利用ありがとうございました。続きはお店でお楽しみください。"
+              : "申し訳ございません、接続エラーが発生しました。もう一度お試しください。",
           },
         ]);
       } finally {

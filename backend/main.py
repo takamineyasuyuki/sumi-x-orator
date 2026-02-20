@@ -9,10 +9,13 @@ import os
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from database import MenuDatabase
 from ai_handler import AIHandler
@@ -53,7 +56,18 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down.")
 
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="SUMI X Orator API", lifespan=lifespan)
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "ご利用ありがとうございました。しばらくお待ちください。"},
+    )
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -91,7 +105,8 @@ class TTSRequest(BaseModel):
 # Endpoints
 # ---------------------------------------------------------------------------
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest):
+@limiter.limit("50/hour")
+async def chat(request: Request, req: ChatRequest):
     if not ai:
         raise HTTPException(status_code=503, detail="AI not initialized")
 
@@ -113,7 +128,8 @@ async def chat(req: ChatRequest):
 
 
 @app.post("/api/tts")
-async def text_to_speech(req: TTSRequest):
+@limiter.limit("50/hour")
+async def text_to_speech(request: Request, req: TTSRequest):
     if not tts:
         raise HTTPException(status_code=503, detail="TTS not initialized")
     try:
