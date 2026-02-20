@@ -1,9 +1,18 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Mic, Send, Volume2, VolumeX, MicOff } from "lucide-react";
+import { Mic, Send, Volume2, VolumeX, MicOff, Globe } from "lucide-react";
 import ChatBubble from "@/components/ChatBubble";
 import MenuCard from "@/components/MenuCard";
+
+const LANGUAGES = [
+  { code: "ja-JP", label: "日本語" },
+  { code: "en-US", label: "English" },
+  { code: "ko-KR", label: "한국어" },
+  { code: "zh-CN", label: "中文" },
+  { code: "es-ES", label: "Español" },
+  { code: "pt-BR", label: "Português" },
+];
 
 // ---------------------------------------------------------------------------
 // Types
@@ -37,6 +46,8 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [sttLang, setSttLang] = useState("ja-JP");
+  const [showLangPicker, setShowLangPicker] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -81,10 +92,20 @@ export default function Home() {
       if (!ttsEnabled || typeof window === "undefined") return;
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      const isJapanese = /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(
-        text
-      );
-      utterance.lang = isJapanese ? "ja-JP" : "en-US";
+      const hasJapanese = /[\u3040-\u309f\u30a0-\u30ff]/.test(text);
+      const hasKorean = /[\uac00-\ud7af\u1100-\u11ff]/.test(text);
+      const hasChinese = /[\u4e00-\u9fff]/.test(text) && !hasJapanese;
+      utterance.lang = hasJapanese
+        ? "ja-JP"
+        : hasKorean
+        ? "ko-KR"
+        : hasChinese
+        ? "zh-CN"
+        : sttLang === "es-ES"
+        ? "es-ES"
+        : sttLang === "pt-BR"
+        ? "pt-BR"
+        : "en-US";
       utterance.rate = 1.0;
       window.speechSynthesis.speak(utterance);
     },
@@ -170,7 +191,7 @@ export default function Home() {
     const recognition = new SR();
     recognition.continuous = false;
     recognition.interimResults = true;
-    recognition.lang = "ja-JP";
+    recognition.lang = sttLang;
 
     recognition.onresult = (event: any) => {
       let transcript = "";
@@ -198,7 +219,7 @@ export default function Home() {
     recognitionRef.current = recognition;
     recognition.start();
     setIsRecording(true);
-  }, [isRecording]);
+  }, [isRecording, sttLang]);
 
   // ------------------------------------------------------------------
   // Keyboard: Enter to send (respects IME composition)
@@ -223,13 +244,46 @@ export default function Home() {
             Orator
           </p>
         </div>
-        <button
-          onClick={() => setTtsEnabled(!ttsEnabled)}
-          className="p-2 text-white/40 hover:text-white/80 transition-colors"
-          aria-label={ttsEnabled ? "Mute voice" : "Unmute voice"}
-        >
-          {ttsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-        </button>
+        <div className="flex items-center gap-1">
+          {/* Language picker */}
+          <div className="relative">
+            <button
+              onClick={() => setShowLangPicker(!showLangPicker)}
+              className="flex items-center gap-1 px-2 py-1.5 text-xs text-white/40 hover:text-white/80 transition-colors"
+            >
+              <Globe size={14} />
+              <span>{LANGUAGES.find((l) => l.code === sttLang)?.label}</span>
+            </button>
+            {showLangPicker && (
+              <div className="absolute right-0 top-full mt-1 bg-[#1a1a1a] border border-white/10 rounded-lg py-1 z-50 min-w-[120px]">
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      setSttLang(lang.code);
+                      setShowLangPicker(false);
+                    }}
+                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                      sttLang === lang.code
+                        ? "text-white bg-white/10"
+                        : "text-white/60 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    {lang.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* TTS toggle */}
+          <button
+            onClick={() => setTtsEnabled(!ttsEnabled)}
+            className="p-2 text-white/40 hover:text-white/80 transition-colors"
+            aria-label={ttsEnabled ? "Mute voice" : "Unmute voice"}
+          >
+            {ttsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          </button>
+        </div>
       </header>
 
       {/* ---- Messages ---- */}
