@@ -64,7 +64,7 @@ class AIHandler:
         )
 
         self.model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name="gemini-2.5-flash",
             system_instruction=system_instruction,
             generation_config=genai.GenerationConfig(
                 temperature=0.7,
