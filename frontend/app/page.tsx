@@ -283,10 +283,10 @@ export default function Home() {
   return (
     <main className="flex flex-col h-[100dvh] max-w-lg mx-auto">
       {/* ---- Header ---- */}
-      <header className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+      <header className="flex items-center justify-between px-5 py-4 border-b border-[#e85d26]/15">
         <div>
-          <h1 className="text-lg font-light tracking-[0.2em]">SUMI X</h1>
-          <p className="text-[10px] text-white/40 tracking-[0.15em] uppercase">
+          <h1 className="text-lg font-bold tracking-[0.15em] text-[#e85d26]">Guu Original</h1>
+          <p className="text-[10px] text-[#f5ebe0]/40 tracking-[0.15em] uppercase">
             Orator
           </p>
         </div>
@@ -295,13 +295,13 @@ export default function Home() {
           <div className="relative">
             <button
               onClick={() => setShowLangPicker(!showLangPicker)}
-              className="flex items-center gap-1 px-2 py-1.5 text-xs text-white/40 hover:text-white/80 transition-colors"
+              className="flex items-center gap-1 px-2 py-1.5 text-xs text-[#f5ebe0]/40 hover:text-[#e85d26] transition-colors"
             >
               <Globe size={14} />
               <span>{LANGUAGES.find((l) => l.code === sttLang)?.label}</span>
             </button>
             {showLangPicker && (
-              <div className="absolute right-0 top-full mt-1 bg-[#1a1a1a] border border-white/10 rounded-lg py-1 z-50 min-w-[120px]">
+              <div className="absolute right-0 top-full mt-1 bg-[#2a1a0a] border border-[#e85d26]/20 rounded-lg py-1 z-50 min-w-[120px]">
                 {LANGUAGES.map((lang) => (
                   <button
                     key={lang.code}
@@ -311,8 +311,8 @@ export default function Home() {
                     }}
                     className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
                       sttLang === lang.code
-                        ? "text-white bg-white/10"
-                        : "text-white/60 hover:text-white hover:bg-white/5"
+                        ? "text-[#e85d26] bg-[#e85d26]/10"
+                        : "text-[#f5ebe0]/60 hover:text-[#e85d26] hover:bg-[#e85d26]/5"
                     }`}
                   >
                     {lang.label}
@@ -324,7 +324,7 @@ export default function Home() {
           {/* TTS toggle */}
           <button
             onClick={() => setTtsEnabled(!ttsEnabled)}
-            className="p-2 text-white/40 hover:text-white/80 transition-colors"
+            className="p-2 text-[#f5ebe0]/40 hover:text-[#e85d26] transition-colors"
             aria-label={ttsEnabled ? "Mute voice" : "Unmute voice"}
           >
             {ttsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
@@ -352,7 +352,7 @@ export default function Home() {
         {/* Loading skeleton */}
         {isLoading && (
           <div className="flex gap-3 items-start">
-            <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0" />
+            <div className="w-8 h-8 rounded-full bg-[#e85d26]/20 flex-shrink-0" />
             <div className="space-y-2 flex-1 max-w-[70%]">
               <div className="skeleton h-4 rounded w-3/4" />
               <div className="skeleton h-4 rounded w-1/2" />
@@ -365,8 +365,8 @@ export default function Home() {
 
       {/* ---- Rating ---- */}
       {userMessageCount >= 3 && !rated && (
-        <div className="flex items-center justify-center gap-1 py-2 border-t border-white/10">
-          <span className="text-[11px] text-white/30 mr-2">How was it?</span>
+        <div className="flex items-center justify-center gap-1 py-2 border-t border-[#e85d26]/15">
+          <span className="text-[11px] text-[#f5ebe0]/30 mr-2">How was it?</span>
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
@@ -379,8 +379,8 @@ export default function Home() {
                 size={20}
                 className={
                   star <= hoveredStar
-                    ? "text-yellow-400 fill-yellow-400"
-                    : "text-white/20"
+                    ? "text-[#e85d26] fill-[#e85d26]"
+                    : "text-[#f5ebe0]/20"
                 }
               />
             </button>
@@ -388,13 +388,13 @@ export default function Home() {
         </div>
       )}
       {rated && (
-        <div className="flex items-center justify-center py-2 border-t border-white/10">
-          <span className="text-[11px] text-white/30">Thank you!</span>
+        <div className="flex items-center justify-center py-2 border-t border-[#e85d26]/15">
+          <span className="text-[11px] text-[#f5ebe0]/30">Thank you!</span>
         </div>
       )}
 
       {/* ---- Input area ---- */}
-      <div className="border-t border-white/10 px-4 py-3">
+      <div className="border-t border-[#e85d26]/15 px-4 py-3">
         <div className="flex items-center gap-2">
           {/* Mic button */}
           {speechSupported && (
@@ -403,7 +403,7 @@ export default function Home() {
               className={`relative p-3 rounded-full transition-all ${
                 isRecording
                   ? "bg-red-500/20 text-red-400"
-                  : "bg-white/5 text-white/40 hover:text-white/80 hover:bg-white/10"
+                  : "bg-[#e85d26]/10 text-[#f5ebe0]/40 hover:text-[#e85d26] hover:bg-[#e85d26]/20"
               }`}
               aria-label={isRecording ? "Stop recording" : "Start recording"}
             >
@@ -422,8 +422,8 @@ export default function Home() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="メニューについてお気軽にどうぞ..."
-            className="flex-1 bg-white/5 border border-white/10 rounded-full px-5 py-3 text-sm
-                       placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors"
+            className="flex-1 bg-[#2a1a0a] border border-[#e85d26]/15 rounded-full px-5 py-3 text-sm text-[#f5ebe0]
+                       placeholder:text-[#f5ebe0]/25 focus:outline-none focus:border-[#e85d26]/40 transition-colors"
             disabled={isLoading}
           />
 
@@ -431,8 +431,8 @@ export default function Home() {
           <button
             onClick={() => sendMessage(input)}
             disabled={!input.trim() || isLoading}
-            className="p-3 rounded-full bg-white/5 text-white/40 hover:text-white hover:bg-white/10
-                       disabled:opacity-30 disabled:hover:bg-white/5 transition-all"
+            className="p-3 rounded-full bg-[#e85d26]/15 text-[#e85d26]/60 hover:text-[#e85d26] hover:bg-[#e85d26]/25
+                       disabled:opacity-30 transition-all"
             aria-label="Send"
           >
             <Send size={20} />

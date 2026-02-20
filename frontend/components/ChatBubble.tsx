@@ -9,15 +9,15 @@ export default function ChatBubble({ role, content }: ChatBubbleProps) {
   return (
     <div className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
       {!isUser && (
-        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 text-[10px] text-white/50 tracking-wider">
-          墨
+        <div className="w-8 h-8 rounded-full bg-[#e85d26] flex items-center justify-center flex-shrink-0 text-[10px] text-white font-bold tracking-wider">
+          Guu
         </div>
       )}
       <div
         className={`max-w-[75%] px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
           isUser
-            ? "bg-white/10 text-white rounded-2xl rounded-br-sm"
-            : "bg-white/[0.03] border border-white/[0.06] text-white/90 rounded-2xl rounded-bl-sm"
+            ? "bg-[#e85d26]/20 text-[#f5ebe0] rounded-2xl rounded-br-sm"
+            : "bg-[#2a1a0a] border border-[#e85d26]/15 text-[#f5ebe0]/90 rounded-2xl rounded-bl-sm"
         }`}
       >
         {content}

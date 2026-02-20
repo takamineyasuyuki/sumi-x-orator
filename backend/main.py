@@ -20,6 +20,7 @@ from slowapi.errors import RateLimitExceeded
 from database import MenuDatabase
 from ai_handler import AIHandler
 from tts_handler import TTSHandler
+from training_handler import TrainingHandler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,11 +28,12 @@ logger = logging.getLogger(__name__)
 db: MenuDatabase | None = None
 ai: AIHandler | None = None
 tts: TTSHandler | None = None
+trainer: TrainingHandler | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global db, ai, tts
+    global db, ai, tts, trainer
     logger.info("Starting SUMI X Orator API ...")
     try:
         db = MenuDatabase()
@@ -51,6 +53,12 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.exception("TTS init failed")
         tts = None
+    try:
+        trainer = TrainingHandler(menu_context=db.get_menu_context() if db else "")
+        logger.info("Training AI ready.")
+    except Exception:
+        logger.exception("Training init failed")
+        trainer = None
     logger.info("Startup complete.")
     yield
     logger.info("Shutting down.")
@@ -144,6 +152,21 @@ async def text_to_speech(request: Request, req: TTSRequest):
     except Exception:
         logger.exception("TTS synthesis failed")
         raise HTTPException(status_code=500, detail="TTS synthesis failed")
+
+
+@app.post("/api/chat/train")
+@limiter.limit("50/hour")
+async def chat_train(request: Request, req: ChatRequest):
+    if not trainer:
+        raise HTTPException(status_code=503, detail="Training AI not initialized")
+
+    if db:
+        db.refresh_if_stale()
+        trainer.update_menu_context(db.get_menu_context())
+
+    history = [{"role": msg.role, "content": msg.content} for msg in req.history]
+    result = trainer.generate_response(req.message, history)
+    return result
 
 
 @app.post("/api/rating")
