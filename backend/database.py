@@ -17,8 +17,8 @@ from google.oauth2.service_account import Credentials
 logger = logging.getLogger(__name__)
 
 SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets.readonly",
-    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
 ]
 
 CACHE_TTL = int(os.getenv("MENU_CACHE_TTL", "300"))  # seconds
@@ -33,7 +33,9 @@ class MenuDatabase:
         sheet_id = os.getenv("GOOGLE_SHEET_ID", "")
         if not sheet_id:
             raise RuntimeError("GOOGLE_SHEET_ID is not set")
-        self.sheet = client.open_by_key(sheet_id).sheet1
+        self._spreadsheet = client.open_by_key(sheet_id)
+        self.sheet = self._spreadsheet.sheet1
+        self._ratings_sheet = self._get_or_create_ratings_sheet()
         self._items: list[dict] = []
         self._last_fetch: float = 0
         self.refresh()
@@ -60,6 +62,27 @@ class MenuDatabase:
             "Set GOOGLE_SHEETS_CREDENTIALS_B64, GOOGLE_SHEETS_CREDENTIALS, "
             "or GOOGLE_SHEETS_CREDENTIALS_FILE"
         )
+
+    def _get_or_create_ratings_sheet(self):
+        """Get or create the Ratings tab."""
+        try:
+            return self._spreadsheet.worksheet("Ratings")
+        except gspread.WorksheetNotFound:
+            ws = self._spreadsheet.add_worksheet("Ratings", rows=1000, cols=4)
+            ws.append_row(["timestamp", "rating", "message_count", "lang"])
+            logger.info("Created Ratings sheet tab.")
+            return ws
+
+    # ------------------------------------------------------------------
+    # Ratings
+    # ------------------------------------------------------------------
+    def save_rating(self, rating: int, message_count: int = 0, lang: str = ""):
+        """Save a customer rating (1-5) to the Ratings sheet."""
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        now = datetime.now(ZoneInfo("America/Vancouver")).strftime("%Y-%m-%d %H:%M:%S")
+        self._ratings_sheet.append_row([now, rating, message_count, lang])
+        logger.info("Rating saved: %d stars", rating)
 
     # ------------------------------------------------------------------
     # Cache management

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Mic, Send, Volume2, VolumeX, MicOff, Globe } from "lucide-react";
+import { Mic, Send, Volume2, VolumeX, MicOff, Globe, Star } from "lucide-react";
 import ChatBubble from "@/components/ChatBubble";
 import MenuCard from "@/components/MenuCard";
 
@@ -48,6 +48,8 @@ export default function Home() {
   const [speechSupported, setSpeechSupported] = useState(false);
   const [sttLang, setSttLang] = useState("ja-JP");
   const [showLangPicker, setShowLangPicker] = useState(false);
+  const [rated, setRated] = useState(false);
+  const [hoveredStar, setHoveredStar] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -249,6 +251,23 @@ export default function Home() {
   }, [isRecording, sttLang]);
 
   // ------------------------------------------------------------------
+  // Rating
+  // ------------------------------------------------------------------
+  const submitRating = async (rating: number) => {
+    setRated(true);
+    const msgCount = messages.filter((m) => m.id !== "welcome").length;
+    try {
+      await fetch(`${API_URL}/api/rating`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating, message_count: msgCount, lang: sttLang }),
+      });
+    } catch {}
+  };
+
+  const userMessageCount = messages.filter((m) => m.role === "user").length;
+
+  // ------------------------------------------------------------------
   // Keyboard: Enter to send (respects IME composition)
   // ------------------------------------------------------------------
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -343,6 +362,36 @@ export default function Home() {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* ---- Rating ---- */}
+      {userMessageCount >= 3 && !rated && (
+        <div className="flex items-center justify-center gap-1 py-2 border-t border-white/10">
+          <span className="text-[11px] text-white/30 mr-2">How was it?</span>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              onClick={() => submitRating(star)}
+              onMouseEnter={() => setHoveredStar(star)}
+              onMouseLeave={() => setHoveredStar(0)}
+              className="p-1 transition-colors"
+            >
+              <Star
+                size={20}
+                className={
+                  star <= hoveredStar
+                    ? "text-yellow-400 fill-yellow-400"
+                    : "text-white/20"
+                }
+              />
+            </button>
+          ))}
+        </div>
+      )}
+      {rated && (
+        <div className="flex items-center justify-center py-2 border-t border-white/10">
+          <span className="text-[11px] text-white/30">Thank you!</span>
+        </div>
+      )}
 
       {/* ---- Input area ---- */}
       <div className="border-t border-white/10 px-4 py-3">

@@ -101,6 +101,12 @@ class TTSRequest(BaseModel):
     lang: str = "ja-JP"
 
 
+class RatingRequest(BaseModel):
+    rating: int  # 1-5
+    message_count: int = 0
+    lang: str = ""
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -138,6 +144,17 @@ async def text_to_speech(request: Request, req: TTSRequest):
     except Exception:
         logger.exception("TTS synthesis failed")
         raise HTTPException(status_code=500, detail="TTS synthesis failed")
+
+
+@app.post("/api/rating")
+@limiter.limit("5/hour")
+async def submit_rating(request: Request, req: RatingRequest):
+    if not db:
+        raise HTTPException(status_code=503, detail="Database not connected")
+    if not 1 <= req.rating <= 5:
+        raise HTTPException(status_code=400, detail="Rating must be 1-5")
+    db.save_rating(req.rating, req.message_count, req.lang)
+    return {"status": "ok"}
 
 
 @app.get("/api/menu")
