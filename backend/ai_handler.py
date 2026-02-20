@@ -76,7 +76,7 @@ class AIHandler:
             system_instruction=system_instruction,
             generation_config=genai.GenerationConfig(
                 temperature=0.7,
-                max_output_tokens=800,
+                max_output_tokens=1500,
             ),
         )
         logger.info("Gemini model built with %d chars of menu context.", len(self._menu_context))
