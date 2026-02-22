@@ -1,8 +1,9 @@
 """
-SUMI X Orator - Menu Database
+SUMI X Orator - Menu & Staff Database
 Google Sheets with time-based caching for real-time admin sync.
 
-Schema: id | name | category | price | description | allergens | chefs_note | image_url | is_active
+Menu schema: 提供中 | メニュー名 | カテゴリー | 担当シェフ | 魅力・特徴 | アレルギー・注意 | 価格
+Staff schema: 出勤 | 名前 | リスペクト要素
 """
 
 import os
@@ -25,7 +26,7 @@ CACHE_TTL = int(os.getenv("MENU_CACHE_TTL", "300"))  # seconds
 
 
 class MenuDatabase:
-    """Google Sheets menu database with automatic refresh."""
+    """Google Sheets menu & staff database with automatic refresh."""
 
     def __init__(self):
         creds = self._load_credentials()
@@ -34,9 +35,12 @@ class MenuDatabase:
         if not sheet_id:
             raise RuntimeError("GOOGLE_SHEET_ID is not set")
         self._spreadsheet = client.open_by_key(sheet_id)
-        self.sheet = self._spreadsheet.sheet1
-        self._ratings_sheet = self._get_or_create_ratings_sheet()
-        self._items: list[dict] = []
+        self._menu_sheet = self._spreadsheet.worksheet("Menu")
+        self._staff_sheet = self._get_or_create_sheet("Staff", cols=3)
+        self._ratings_sheet = self._get_or_create_sheet("Ratings", cols=4,
+                                                         header=["timestamp", "rating", "message_count", "lang"])
+        self._menu_items: list[dict] = []
+        self._staff: list[dict] = []
         self._last_fetch: float = 0
         self.refresh()
         logger.info("Connected to Google Sheet: %s", sheet_id)
@@ -63,14 +67,15 @@ class MenuDatabase:
             "or GOOGLE_SHEETS_CREDENTIALS_FILE"
         )
 
-    def _get_or_create_ratings_sheet(self):
-        """Get or create the Ratings tab."""
+    def _get_or_create_sheet(self, title: str, cols: int = 4, header: list[str] | None = None):
+        """Get or create a worksheet by title."""
         try:
-            return self._spreadsheet.worksheet("Ratings")
+            return self._spreadsheet.worksheet(title)
         except gspread.WorksheetNotFound:
-            ws = self._spreadsheet.add_worksheet("Ratings", rows=1000, cols=4)
-            ws.append_row(["timestamp", "rating", "message_count", "lang"])
-            logger.info("Created Ratings sheet tab.")
+            ws = self._spreadsheet.add_worksheet(title, rows=1000, cols=cols)
+            if header:
+                ws.append_row(header)
+            logger.info("Created %s sheet tab.", title)
             return ws
 
     # ------------------------------------------------------------------
@@ -88,10 +93,15 @@ class MenuDatabase:
     # Cache management
     # ------------------------------------------------------------------
     def refresh(self):
-        """Fetch all rows from the sheet."""
-        self._items = self.sheet.get_all_records()
+        """Fetch all rows from Menu and Staff sheets."""
+        self._menu_items = self._menu_sheet.get_all_records()
+        try:
+            self._staff = self._staff_sheet.get_all_records()
+        except Exception:
+            logger.warning("Staff sheet read failed, using empty list")
+            self._staff = []
         self._last_fetch = time.time()
-        logger.info("Menu refreshed: %d items", len(self._items))
+        logger.info("Refreshed: %d menu items, %d staff", len(self._menu_items), len(self._staff))
 
     def refresh_if_stale(self):
         """Refresh data if the cache TTL has expired."""
@@ -99,15 +109,15 @@ class MenuDatabase:
             self.refresh()
 
     # ------------------------------------------------------------------
-    # Read operations
+    # Menu read operations
     # ------------------------------------------------------------------
     def get_all_items(self) -> list[dict]:
-        return self._items
+        return self._menu_items
 
     def get_active_items(self) -> list[dict]:
         return [
-            item for item in self._items
-            if str(item.get("is_active", "")).upper() == "TRUE"
+            item for item in self._menu_items
+            if str(item.get("提供中", "")).upper() == "TRUE"
         ]
 
     def find_mentioned_items(self, text: str) -> list[dict]:
@@ -115,8 +125,34 @@ class MenuDatabase:
         text_lower = text.lower()
         return [
             item for item in self.get_active_items()
-            if item.get("name", "") and item["name"].lower() in text_lower
+            if item.get("メニュー名", "") and item["メニュー名"].lower() in text_lower
         ]
+
+    # ------------------------------------------------------------------
+    # Staff read operations
+    # ------------------------------------------------------------------
+    def get_working_staff(self) -> list[dict]:
+        """Return staff members currently on shift."""
+        return [
+            s for s in self._staff
+            if str(s.get("出勤", "")).upper() == "TRUE"
+        ]
+
+    def get_staff_context(self) -> str:
+        """Build a text summary of working staff for the AI prompt."""
+        working = self.get_working_staff()
+        if not working:
+            return "今日の出勤スタッフ情報はまだ登録されていません。"
+        lines = []
+        for s in working:
+            name = s.get("名前", "")
+            respect = s.get("リスペクト要素", "")
+            if name:
+                line = f"- {name}"
+                if respect:
+                    line += f": {respect}"
+                lines.append(line)
+        return "今日の出勤スタッフ:\n" + "\n".join(lines)
 
     # ------------------------------------------------------------------
     # AI context builder
@@ -125,21 +161,27 @@ class MenuDatabase:
         """Build a text summary for the AI system prompt."""
         items = self.get_active_items()
         if not items:
-            return "No menu items registered yet."
+            return "メニュー情報はまだ登録されていません。"
+
+        # Group by category
+        categories: dict[str, list[dict]] = {}
+        for item in items:
+            cat = item.get("カテゴリー", "その他")
+            categories.setdefault(cat, []).append(item)
 
         lines: list[str] = []
-        for item in items:
-            parts = [f"- {item['name']}"]
-            if item.get("category"):
-                parts.append(f"[{item['category']}]")
-            if item.get("price") and float(item["price"]) > 0:
-                parts.append(f"${item['price']}")
-            if item.get("description") and item["description"] != "TBD":
-                parts.append(f"- {item['description']}")
-            if item.get("allergens"):
-                parts.append(f"(Allergens: {item['allergens']})")
-            if item.get("chefs_note"):
-                parts.append(f"[Chef's note: {item['chefs_note']}]")
-            lines.append(" ".join(parts))
+        for cat, cat_items in categories.items():
+            lines.append(f"\n[{cat}]")
+            for item in cat_items:
+                parts = [f"- {item['メニュー名']}"]
+                if item.get("価格") and float(item["価格"]) > 0:
+                    parts.append(f"${item['価格']}")
+                if item.get("魅力・特徴"):
+                    parts.append(f"- {item['魅力・特徴']}")
+                if item.get("担当シェフ"):
+                    parts.append(f"[Chef: {item['担当シェフ']}]")
+                if item.get("アレルギー・注意"):
+                    parts.append(f"(Allergens: {item['アレルギー・注意']})")
+                lines.append(" ".join(parts))
 
         return "\n".join(lines)

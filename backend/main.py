@@ -42,7 +42,10 @@ async def lifespan(app: FastAPI):
         logger.exception("Google Sheets init failed")
         db = None
     try:
-        ai = AIHandler(menu_context=db.get_menu_context() if db else "")
+        ai = AIHandler(
+            menu_context=db.get_menu_context() if db else "",
+            staff_context=db.get_staff_context() if db else "",
+        )
         logger.info("Gemini AI ready.")
     except Exception:
         logger.exception("Gemini init failed")
@@ -124,10 +127,11 @@ async def chat(request: Request, req: ChatRequest):
     if not ai:
         raise HTTPException(status_code=503, detail="AI not initialized")
 
-    # Refresh menu if stale (real-time admin sync)
+    # Refresh menu & staff if stale (real-time admin sync)
     if db:
         db.refresh_if_stale()
         ai.update_menu_context(db.get_menu_context())
+        ai.update_staff_context(db.get_staff_context())
 
     # Build conversation history
     history = [{"role": msg.role, "content": msg.content} for msg in req.history]

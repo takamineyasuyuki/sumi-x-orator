@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SUMI X Orator",
-  description: "AI-powered menu concierge",
+  title: "Guu Original - Orator",
+  description: "Meet John, your Guu hype man",
 };
 
 export const viewport: Viewport = {

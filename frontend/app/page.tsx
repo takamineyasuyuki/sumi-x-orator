@@ -18,13 +18,12 @@ const LANGUAGES = [
 // Types
 // ---------------------------------------------------------------------------
 interface MenuItem {
-  name: string;
-  category?: string;
-  price: number;
-  description?: string;
-  allergens?: string;
-  chefs_note?: string;
-  image_url?: string;
+  メニュー名: string;
+  カテゴリー?: string;
+  価格: number;
+  "魅力・特徴"?: string;
+  "アレルギー・注意"?: string;
+  担当シェフ?: string;
 }
 
 interface Message {
@@ -76,7 +75,7 @@ export default function Home() {
         id: "welcome",
         role: "assistant",
         content:
-          "いらっしゃいませ。本日はご来店ありがとうございます。\nメニューについて何でもお気軽にお聞きください。",
+          "Hey! Welcome to Guu! I'm John, your digital hype man!\nI'll get you pumped about the menu, and the awesome crew here will take your order. Let's gooo!",
       },
     ]);
   }, []);
@@ -352,7 +351,7 @@ export default function Home() {
         {/* Loading skeleton */}
         {isLoading && (
           <div className="flex gap-3 items-start">
-            <div className="w-8 h-8 rounded-full bg-[#e85d26]/20 flex-shrink-0" />
+            <div className="w-10 h-10 rounded-full bg-[#4CAF50]/20 flex-shrink-0" />
             <div className="space-y-2 flex-1 max-w-[70%]">
               <div className="skeleton h-4 rounded w-3/4" />
               <div className="skeleton h-4 rounded w-1/2" />
