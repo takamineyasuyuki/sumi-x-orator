@@ -175,3 +175,37 @@ class AIHandler:
                 "Oops, I'm having a little trouble right now! "
                 "Please ask our amazing staff directly - they'll take great care of you!"
             )
+
+    def translate_messages(self, texts: list[str], target_lang: str) -> list[str]:
+        """Translate a batch of assistant messages to the target language."""
+        if not texts:
+            return []
+        try:
+            numbered = "\n".join(f"[{i}] {t}" for i, t in enumerate(texts))
+            prompt = (
+                f"Translate the following numbered messages to {target_lang}. "
+                f"Keep menu item names (food/drink names) in their original English form. "
+                f"Keep Japanese cultural phrases like Onegaishimasu, Oishii, Gochisosama, Otsukaresama as-is. "
+                f"Return ONLY the translated messages in the same numbered format [0], [1], etc. "
+                f"Do not add any explanation.\n\n{numbered}"
+            )
+            response = self.model.generate_content(prompt)
+            result_text = response.text.strip()
+            # Parse numbered results
+            translated: list[str] = []
+            for i in range(len(texts)):
+                marker = f"[{i}]"
+                next_marker = f"[{i + 1}]"
+                start = result_text.find(marker)
+                if start == -1:
+                    translated.append(texts[i])
+                    continue
+                start += len(marker)
+                end = result_text.find(next_marker, start) if i < len(texts) - 1 else len(result_text)
+                if end == -1:
+                    end = len(result_text)
+                translated.append(result_text[start:end].strip())
+            return translated
+        except Exception:
+            logger.exception("Translation error")
+            return texts

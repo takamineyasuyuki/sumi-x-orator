@@ -125,6 +125,11 @@ class RatingRequest(BaseModel):
     lang: str = ""
 
 
+class TranslateRequest(BaseModel):
+    texts: list[str]
+    lang: str
+
+
 class ToggleRequest(BaseModel):
     menu_name: str
     available: bool
@@ -249,6 +254,20 @@ async def toggle_menu_item(req: ToggleRequest):
     if not ok:
         raise HTTPException(status_code=404, detail="Menu item not found")
     return {"status": "ok", "menu_name": req.menu_name, "available": req.available}
+
+
+@app.post("/api/translate")
+@limiter.limit("10/hour")
+async def translate_messages(request: Request, req: TranslateRequest):
+    if not ai:
+        raise HTTPException(status_code=503, detail="AI not initialized")
+    lang_map = {
+        "en-US": "English", "ja-JP": "Japanese", "ko-KR": "Korean",
+        "zh-CN": "Chinese", "es-ES": "Spanish", "pt-BR": "Portuguese",
+    }
+    lang_name = lang_map.get(req.lang, "English")
+    translated = ai.translate_messages(req.texts, lang_name)
+    return {"texts": translated}
 
 
 @app.get("/api/config/talk-theme")

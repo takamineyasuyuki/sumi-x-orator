@@ -220,7 +220,38 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // No-op: welcome message stays in original language, chat history preserved
+  // When language changes, translate all assistant messages
+  const prevLangRef = useRef(sttLang);
+  useEffect(() => {
+    if (prevLangRef.current === sttLang) return;
+    prevLangRef.current = sttLang;
+
+    // Collect assistant messages to translate
+    const assistantMsgs = messages.filter((m) => m.role === "assistant");
+    if (assistantMsgs.length === 0) return;
+
+    const texts = assistantMsgs.map((m) => m.content);
+    fetch(`${API_URL}/api/translate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texts, lang: sttLang }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data?.texts) return;
+        const translated = data.texts as string[];
+        let idx = 0;
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.role === "assistant" && idx < translated.length) {
+              return { ...m, content: translated[idx++] };
+            }
+            return m;
+          })
+        );
+      })
+      .catch(() => {});
+  }, [sttLang, messages]);
 
   // Auto-scroll
   useEffect(() => {
