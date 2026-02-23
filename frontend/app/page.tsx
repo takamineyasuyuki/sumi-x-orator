@@ -220,15 +220,7 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When language changes, update only the welcome message in-place
-  const prevLangRef = useRef(sttLang);
-  useEffect(() => {
-    if (prevLangRef.current === sttLang) return;
-    prevLangRef.current = sttLang;
-    setMessages((prev) =>
-      prev.map((m) => (m.id === "welcome" ? { ...m, content: t.welcome } : m))
-    );
-  }, [sttLang, t.welcome]);
+  // No-op: welcome message stays in original language, chat history preserved
 
   // Auto-scroll
   useEffect(() => {
@@ -268,6 +260,7 @@ export default function Home() {
           body: JSON.stringify({
             message: text.trim(),
             history,
+            lang: sttLang,
             energy_context: { message_count: messageCount, drink_mentions: drinkMentions },
           }),
         });

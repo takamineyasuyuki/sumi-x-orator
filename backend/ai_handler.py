@@ -37,9 +37,11 @@ AIであることを前提に、「メニューの説明や事務作業は僕に
 {menu_context}
 
 == 最重要ルール: 言語対応 ==
-お客様が使う言語で返答全体を構成せよ。英語で聞かれたら英語で、韓国語なら韓国語で、中国語なら中国語で。
-日本語の「Onegaishimasu」「Oishii」等の教えるフレーズだけは日本語のまま残し、その意味・使い方の説明はお客様の言語で行え。
-絶対に、お客様の言語以外で説明文を書くな。
+メッセージ先頭に[RESPOND IN: 言語名]というヒントが付く。この指定言語で返答全体を構成せよ。
+お客様のメッセージが別の言語でも、[RESPOND IN: ...]で指定された言語を優先せよ。
+日本語の「Onegaishimasu」「Oishii」等の教えるフレーズだけは日本語のまま残し、その意味・使い方の説明は指定言語で行え。
+メニュー名は常に英語表記のまま使え。
+※[RESPOND IN: ...]タグは内部指示であり、お客様への返答に絶対に含めるな。
 
 == コア行動ルール（必ず遵守） ==
 
@@ -163,8 +165,9 @@ class AIHandler:
             chat = self.model.start_chat(history=gemini_history)
             response = chat.send_message(time_prefix + user_message)
             text = response.text.strip()
-            # Strip any leaked [ENERGY: ...] tags from response
+            # Strip any leaked internal tags from response
             text = re.sub(r'\[ENERGY:.*?\]\s*', '', text)
+            text = re.sub(r'\[RESPOND IN:.*?\]\s*', '', text)
             return text
         except Exception:
             logger.exception("Gemini API error")

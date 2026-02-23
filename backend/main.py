@@ -105,6 +105,7 @@ class EnergyContext(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: list[ChatMessage] = []
+    lang: str = "en-US"
     energy_context: EnergyContext | None = None
 
 
@@ -159,8 +160,16 @@ async def chat(request: Request, req: ChatRequest):
         else:
             energy_hint = "[ENERGY: LOW - warm welcome, helpful and calm] "
 
+    # Language hint from frontend selection
+    lang_map = {
+        "en-US": "English", "ja-JP": "Japanese", "ko-KR": "Korean",
+        "zh-CN": "Chinese", "es-ES": "Spanish", "pt-BR": "Portuguese",
+    }
+    lang_name = lang_map.get(req.lang, "English")
+    lang_hint = f"[RESPOND IN: {lang_name}] "
+
     # Generate response
-    reply = ai.generate_response(energy_hint + req.message, history)
+    reply = ai.generate_response(lang_hint + energy_hint + req.message, history)
 
     # Find menu items mentioned in the response
     menu_items = db.find_mentioned_items(reply) if db else []
