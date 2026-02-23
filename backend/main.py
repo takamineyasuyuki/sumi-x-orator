@@ -118,6 +118,11 @@ class RatingRequest(BaseModel):
     lang: str = ""
 
 
+class ToggleRequest(BaseModel):
+    menu_name: str
+    available: bool
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -190,6 +195,33 @@ async def get_menu():
         raise HTTPException(status_code=503, detail="Database not connected")
     db.refresh_if_stale()
     return {"items": db.get_active_items()}
+
+
+@app.get("/api/menu/availability")
+async def menu_availability():
+    """Lightweight polling endpoint: returns only メニュー名 + 提供中 (bool)."""
+    if not db:
+        raise HTTPException(status_code=503, detail="Database not connected")
+    return {"items": db.get_availability()}
+
+
+@app.get("/api/menu/staff")
+async def menu_for_staff():
+    """Staff admin: returns メニュー名 + カテゴリー + 提供中 for toggle UI."""
+    if not db:
+        raise HTTPException(status_code=503, detail="Database not connected")
+    return {"items": db.get_all_items_for_staff()}
+
+
+@app.post("/api/menu/toggle")
+async def toggle_menu_item(req: ToggleRequest):
+    """Staff admin: toggle 提供中 for a single menu item."""
+    if not db:
+        raise HTTPException(status_code=503, detail="Database not connected")
+    ok = db.toggle_availability(req.menu_name, req.available)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Menu item not found")
+    return {"status": "ok", "menu_name": req.menu_name, "available": req.available}
 
 
 @app.get("/health")

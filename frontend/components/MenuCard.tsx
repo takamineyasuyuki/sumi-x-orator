@@ -3,15 +3,25 @@ interface MenuCardProps {
     メニュー名: string;
     カテゴリー?: string;
     価格: number;
-    魅力・特徴?: string;
-    アレルギー・注意?: string;
+    "魅力・特徴"?: string;
+    "アレルギー・注意"?: string;
     担当シェフ?: string;
   };
+  soldOut?: boolean;
 }
 
-export default function MenuCard({ item }: MenuCardProps) {
+export default function MenuCard({ item, soldOut }: MenuCardProps) {
   return (
-    <div className="flex-shrink-0 w-56 bg-[#2a1a0a] border border-[#e85d26]/15 rounded-xl overflow-hidden">
+    <div className={`flex-shrink-0 w-56 bg-[#2a1a0a] border rounded-xl overflow-hidden relative ${
+      soldOut ? "border-[#f5ebe0]/10 opacity-50" : "border-[#e85d26]/15"
+    }`}>
+      {soldOut && (
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          <span className="bg-red-600/90 text-white text-xs font-bold px-3 py-1 rounded-full -rotate-12">
+            SOLD OUT
+          </span>
+        </div>
+      )}
       <div className="p-4 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <h3 className="text-sm font-medium text-[#f5ebe0]">{item.メニュー名}</h3>

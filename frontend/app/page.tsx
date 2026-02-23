@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, Send, Volume2, VolumeX, MicOff, Globe, Star } from "lucide-react";
 import ChatBubble from "@/components/ChatBubble";
 import MenuCard from "@/components/MenuCard";
+import DrunkJohn from "@/components/DrunkJohn";
 
 const LANGUAGES = [
   { code: "ja-JP", label: "日本語" },
@@ -26,6 +27,11 @@ interface MenuItem {
   担当シェフ?: string;
 }
 
+interface AvailabilityItem {
+  メニュー名: string;
+  提供中: boolean;
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -34,6 +40,7 @@ interface Message {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const POLL_INTERVAL = 20_000; // 20 seconds
 
 // ---------------------------------------------------------------------------
 // Component
@@ -49,11 +56,25 @@ export default function Home() {
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [rated, setRated] = useState(false);
   const [hoveredStar, setHoveredStar] = useState(0);
+  const [backendDown, setBackendDown] = useState(false);
+  const [availability, setAvailability] = useState<AvailabilityItem[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
   const sendMessageRef = useRef<(text: string) => void>();
+
+  // ------------------------------------------------------------------
+  // Check if a menu item is currently available
+  // ------------------------------------------------------------------
+  const isItemAvailable = useCallback(
+    (name: string) => {
+      if (availability.length === 0) return true; // default to available if no data yet
+      const found = availability.find((a) => a.メニュー名 === name);
+      return found ? found.提供中 : true;
+    },
+    [availability]
+  );
 
   // ------------------------------------------------------------------
   // Init: check Speech API support & wake backend
@@ -65,7 +86,34 @@ export default function Home() {
     setSpeechSupported(!!SR);
 
     // Wake Render backend (cold start can take ~30s)
-    fetch(`${API_URL}/health`).catch(() => {});
+    fetch(`${API_URL}/health`)
+      .then((r) => { if (!r.ok) setBackendDown(true); })
+      .catch(() => setBackendDown(true));
+  }, []);
+
+  // ------------------------------------------------------------------
+  // Polling: lightweight availability check every 20s
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/menu/availability`);
+        if (res.ok) {
+          const data = await res.json();
+          setAvailability(data.items);
+          setBackendDown(false);
+        }
+      } catch {
+        // Silently fail - don't set backendDown for polling failures
+      }
+    };
+
+    // Initial fetch
+    poll();
+
+    // Poll every 20s
+    const interval = setInterval(poll, POLL_INTERVAL);
+    return () => clearInterval(interval);
   }, []);
 
   // Welcome message
@@ -176,9 +224,13 @@ export default function Home() {
             data.menu_items?.length > 0 ? data.menu_items : undefined,
         };
         setMessages((prev) => [...prev, aiMsg]);
+        setBackendDown(false);
         speak(data.reply);
       } catch (err) {
         const isRateLimit = err instanceof Error && err.message === "RATE_LIMIT";
+        if (!isRateLimit) {
+          setBackendDown(true);
+        }
         setMessages((prev) => [
           ...prev,
           {
@@ -186,7 +238,7 @@ export default function Home() {
             role: "assistant",
             content: isRateLimit
               ? "ご利用ありがとうございました。続きはお店でお楽しみください。"
-              : "申し訳ございません、接続エラーが発生しました。もう一度お試しください。",
+              : "Oops! John drank too much sake! Please call a human staff member!",
           },
         ]);
       } finally {
@@ -277,7 +329,24 @@ export default function Home() {
   };
 
   // ------------------------------------------------------------------
-  // Render
+  // Render: Drunk John error state
+  // ------------------------------------------------------------------
+  if (backendDown && messages.length <= 1) {
+    return (
+      <main className="flex flex-col h-[100dvh] max-w-lg mx-auto">
+        <header className="flex items-center justify-center px-5 py-4 border-b border-[#e85d26]/15">
+          <div className="text-center">
+            <h1 className="text-lg font-bold tracking-[0.15em] text-[#e85d26]">Guu Original</h1>
+            <p className="text-[10px] text-[#f5ebe0]/40 tracking-[0.15em] uppercase">Orator</p>
+          </div>
+        </header>
+        <DrunkJohn />
+      </main>
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Render: Main chat UI
   // ------------------------------------------------------------------
   return (
     <main className="flex flex-col h-[100dvh] max-w-lg mx-auto">
@@ -341,7 +410,11 @@ export default function Home() {
             {msg.menuItems && msg.menuItems.length > 0 && (
               <div className="menu-carousel flex gap-3 overflow-x-auto py-3 pl-11">
                 {msg.menuItems.map((item, i) => (
-                  <MenuCard key={i} item={item} />
+                  <MenuCard
+                    key={i}
+                    item={item}
+                    soldOut={!isItemAvailable(item.メニュー名)}
+                  />
                 ))}
               </div>
             )}

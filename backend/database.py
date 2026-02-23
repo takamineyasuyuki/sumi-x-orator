@@ -155,6 +155,52 @@ class MenuDatabase:
         return "今日の出勤スタッフ:\n" + "\n".join(lines)
 
     # ------------------------------------------------------------------
+    # Lightweight availability (polling - columns A+B only)
+    # ------------------------------------------------------------------
+    def get_availability(self) -> list[dict]:
+        """Fetch only 提供中 + メニュー名 columns for minimal payload polling."""
+        col_a = self._menu_sheet.col_values(1)  # 提供中
+        col_b = self._menu_sheet.col_values(2)  # メニュー名
+        # Skip header row, zip columns
+        result = []
+        for i in range(1, max(len(col_a), len(col_b))):
+            name = col_b[i] if i < len(col_b) else ""
+            active = col_a[i] if i < len(col_a) else ""
+            if name:
+                result.append({"メニュー名": name, "提供中": active.upper() == "TRUE"})
+        return result
+
+    def toggle_availability(self, menu_name: str, available: bool):
+        """Set 提供中 (column A) for a specific menu item by name."""
+        col_b = self._menu_sheet.col_values(2)  # メニュー名
+        for i, name in enumerate(col_b):
+            if name == menu_name:
+                row_num = i + 1  # 1-indexed
+                self._menu_sheet.update_cell(row_num, 1, "TRUE" if available else "FALSE")
+                logger.info("Toggled %s -> %s", menu_name, available)
+                return True
+        logger.warning("Menu item not found for toggle: %s", menu_name)
+        return False
+
+    def get_all_items_for_staff(self) -> list[dict]:
+        """Get メニュー名 + カテゴリー + 提供中 for the staff admin UI."""
+        col_a = self._menu_sheet.col_values(1)  # 提供中
+        col_b = self._menu_sheet.col_values(2)  # メニュー名
+        col_c = self._menu_sheet.col_values(3)  # カテゴリー
+        result = []
+        for i in range(1, max(len(col_a), len(col_b), len(col_c))):
+            name = col_b[i] if i < len(col_b) else ""
+            active = col_a[i] if i < len(col_a) else ""
+            cat = col_c[i] if i < len(col_c) else ""
+            if name:
+                result.append({
+                    "メニュー名": name,
+                    "カテゴリー": cat,
+                    "提供中": active.upper() == "TRUE",
+                })
+        return result
+
+    # ------------------------------------------------------------------
     # AI context builder
     # ------------------------------------------------------------------
     def get_menu_context(self) -> str:
