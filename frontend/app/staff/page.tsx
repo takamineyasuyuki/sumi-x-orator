@@ -12,27 +12,42 @@ interface StaffMenuItem {
 
 export default function StaffPage() {
   const [items, setItems] = useState<StaffMenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  const [password, setPassword] = useState("");
+  const [authed, setAuthed] = useState(false);
+  const [authError, setAuthError] = useState(false);
+
+  const authHeaders = useCallback(
+    () => ({ "Content-Type": "application/json", Authorization: `Bearer ${password}` }),
+    [password]
+  );
 
   const fetchItems = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/menu/staff`);
+      const res = await fetch(`${API_URL}/api/menu/staff`, {
+        headers: { Authorization: `Bearer ${password}` },
+      });
+      if (res.status === 401) { setAuthed(false); setAuthError(true); return; }
       if (!res.ok) throw new Error();
       const data = await res.json();
       setItems(data.items);
       setError(false);
+      setAuthed(true);
     } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [password]);
 
-  useEffect(() => {
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(false);
     fetchItems();
-  }, [fetchItems]);
+  };
 
   const toggle = async (menuName: string, currentValue: boolean) => {
     setToggling(menuName);
@@ -44,7 +59,7 @@ export default function StaffPage() {
     try {
       const res = await fetch(`${API_URL}/api/menu/toggle`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(),
         body: JSON.stringify({ menu_name: menuName, available: !currentValue }),
       });
       if (!res.ok) throw new Error();
@@ -66,6 +81,40 @@ export default function StaffPage() {
     return acc;
   }, {});
 
+  // Login screen
+  if (!authed) {
+    return (
+      <main className="min-h-[100dvh] flex items-center justify-center px-6">
+        <form onSubmit={handleLogin} className="w-full max-w-xs space-y-4">
+          <div className="text-center">
+            <h1 className="text-lg font-bold tracking-[0.1em] text-[#3D2B1F]">Guu Staff</h1>
+            <p className="text-[10px] text-[#8B7355] tracking-[0.15em] uppercase">Menu Control</p>
+          </div>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Staff password"
+            className="w-full bg-[#FFF9F0] border border-[#D4C4AE] rounded-lg px-4 py-3 text-sm text-[#3D2B1F]
+                       placeholder:text-[#8B7355]/50 focus:outline-none focus:border-[#B8D435] transition-colors"
+            autoFocus
+          />
+          {authError && (
+            <p className="text-red-500 text-xs text-center">Wrong password</p>
+          )}
+          <button
+            type="submit"
+            disabled={!password || loading}
+            className="w-full py-3 bg-[#B8D435] text-white rounded-lg text-sm font-medium
+                       hover:bg-[#A5C02E] disabled:opacity-30 transition-all"
+          >
+            {loading ? "Checking..." : "Login"}
+          </button>
+        </form>
+      </main>
+    );
+  }
+
   if (loading) {
     return (
       <main className="min-h-[100dvh] flex items-center justify-center">
@@ -80,7 +129,7 @@ export default function StaffPage() {
         <div className="text-center space-y-3">
           <p className="text-[#8B7355] text-sm">Backend connection failed</p>
           <button
-            onClick={() => { setLoading(true); fetchItems(); }}
+            onClick={() => fetchItems()}
             className="px-4 py-2 bg-[#B8D435] text-white rounded-lg text-sm font-medium"
           >
             Retry

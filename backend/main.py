@@ -6,13 +6,15 @@ Start command: uvicorn main:app --host 0.0.0.0 --port $PORT
 """
 
 import os
+import hmac
+import hashlib
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -80,13 +82,30 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     )
 
 
+# CORS: restrict to known frontend origins
+_cors_raw = os.getenv("ALLOWED_ORIGINS", "")
+_cors_origins = [o.strip() for o in _cors_raw.split(",") if o.strip()] if _cors_raw else ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # MVP: allow all. Restrict in production.
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
+
+# Staff admin password (set STAFF_PASSWORD env var on Render)
+STAFF_PASSWORD = os.getenv("STAFF_PASSWORD", "")
+
+
+def verify_staff(authorization: str | None = Header(None)):
+    """Check Bearer token matches STAFF_PASSWORD."""
+    if not STAFF_PASSWORD:
+        return  # No password set = skip auth (dev mode)
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization required")
+    token = authorization[7:]
+    if not hmac.compare_digest(token, STAFF_PASSWORD):
+        raise HTTPException(status_code=401, detail="Invalid password")
 
 
 # ---------------------------------------------------------------------------
@@ -102,11 +121,28 @@ class EnergyContext(BaseModel):
     drink_mentions: int = 0
 
 
+VALID_LANGS = {"en-US", "ja-JP", "ko-KR", "zh-CN", "es-ES", "pt-BR"}
+
+
 class ChatRequest(BaseModel):
     message: str
     history: list[ChatMessage] = []
     lang: str = "en-US"
     energy_context: EnergyContext | None = None
+
+    @field_validator("message")
+    @classmethod
+    def message_max_length(cls, v: str) -> str:
+        if len(v) > 500:
+            raise ValueError("Message too long (max 500 characters)")
+        return v
+
+    @field_validator("lang")
+    @classmethod
+    def lang_must_be_valid(cls, v: str) -> str:
+        if v not in VALID_LANGS:
+            return "en-US"
+        return v
 
 
 class ChatResponse(BaseModel):
@@ -128,6 +164,20 @@ class RatingRequest(BaseModel):
 class TranslateRequest(BaseModel):
     texts: list[str]
     lang: str
+
+    @field_validator("texts")
+    @classmethod
+    def texts_limit(cls, v: list[str]) -> list[str]:
+        if len(v) > 50:
+            raise ValueError("Too many texts (max 50)")
+        return v
+
+    @field_validator("lang")
+    @classmethod
+    def lang_must_be_valid(cls, v: str) -> str:
+        if v not in VALID_LANGS:
+            return "en-US"
+        return v
 
 
 class ToggleRequest(BaseModel):
@@ -238,7 +288,7 @@ async def menu_availability():
 
 
 @app.get("/api/menu/staff")
-async def menu_for_staff():
+async def menu_for_staff(_=Depends(verify_staff)):
     """Staff admin: returns メニュー名 + カテゴリー + 提供中 for toggle UI."""
     if not db:
         raise HTTPException(status_code=503, detail="Database not connected")
@@ -246,7 +296,8 @@ async def menu_for_staff():
 
 
 @app.post("/api/menu/toggle")
-async def toggle_menu_item(req: ToggleRequest):
+@limiter.limit("100/hour")
+async def toggle_menu_item(request: Request, req: ToggleRequest, _=Depends(verify_staff)):
     """Staff admin: toggle 提供中 for a single menu item."""
     if not db:
         raise HTTPException(status_code=503, detail="Database not connected")
