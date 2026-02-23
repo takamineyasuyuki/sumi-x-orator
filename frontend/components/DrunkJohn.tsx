@@ -1,7 +1,16 @@
-export default function DrunkJohn() {
+interface DrunkJohnProps {
+  title?: string;
+  subtitle?: string;
+  hint?: string;
+}
+
+export default function DrunkJohn({
+  title = "Oops! John drank too much sake and is taking a nap!",
+  subtitle = "Please call a human staff member!",
+  hint = "(John is recovering... try again in a moment)",
+}: DrunkJohnProps) {
   return (
     <div className="flex flex-col items-center justify-center h-full px-8 text-center gap-6">
-      {/* Drunk John: flipped image or fallback */}
       <div className="w-36 h-36 rounded-full overflow-hidden border-2 border-[#D4C4AE] bg-[#FFF9F0] animate-bounce"
            style={{ animationDuration: "2.5s" }}>
         <img
@@ -18,15 +27,9 @@ export default function DrunkJohn() {
       </div>
 
       <div className="space-y-3 max-w-sm">
-        <p className="text-base font-medium text-[#3D2B1F]">
-          Oops! John drank too much sake and is taking a nap!
-        </p>
-        <p className="text-sm text-[#8B7355]">
-          Please call a human staff member!
-        </p>
-        <p className="text-xs text-[#8B7355]/60">
-          (John is recovering... try again in a moment)
-        </p>
+        <p className="text-base font-medium text-[#3D2B1F]">{title}</p>
+        <p className="text-sm text-[#8B7355]">{subtitle}</p>
+        <p className="text-xs text-[#8B7355]/60">{hint}</p>
       </div>
     </div>
   );

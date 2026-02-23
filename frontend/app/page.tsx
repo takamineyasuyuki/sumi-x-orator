@@ -1,14 +1,111 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Mic, Send, MicOff, Globe, Star } from "lucide-react";
 import ChatBubble from "@/components/ChatBubble";
 import MenuCard from "@/components/MenuCard";
 import DrunkJohn from "@/components/DrunkJohn";
 
+// ---------------------------------------------------------------------------
+// i18n
+// ---------------------------------------------------------------------------
+interface UIStrings {
+  welcome: string;
+  placeholder: string;
+  ratingAsk: string;
+  ratingThanks: string;
+  talkThemeLabel: string;
+  rateLimitError: string;
+  apiError: string;
+  drunkTitle: string;
+  drunkSubtitle: string;
+  drunkHint: string;
+}
+
+const I18N: Record<string, UIStrings> = {
+  "en-US": {
+    welcome:
+      "Hey! Welcome to Guu! I'm John, your digital concierge!\nI'll handle all the menu info - you just enjoy the vibes and the amazing crew here. What are you in the mood for?",
+    placeholder: "Ask me about the menu...",
+    ratingAsk: "How was it?",
+    ratingThanks: "Thank you!",
+    talkThemeLabel: "This Week's Talk Theme",
+    rateLimitError: "Thanks for chatting! Please enjoy the rest with our amazing staff!",
+    apiError: "Oops! John drank too much sake! Please call a human staff member!",
+    drunkTitle: "Oops! John drank too much sake and is taking a nap!",
+    drunkSubtitle: "Please call a human staff member!",
+    drunkHint: "(John is recovering... try again in a moment)",
+  },
+  "ja-JP": {
+    welcome:
+      "いらっしゃい！Guuへようこそ！僕はジョン、デジタルコンシェルジュだよ！\nメニューのことは僕に任せて、君は最高のスタッフとの時間を楽しんで！何が気になる？",
+    placeholder: "メニューについて聞いてね...",
+    ratingAsk: "どうだった？",
+    ratingThanks: "ありがとう！",
+    talkThemeLabel: "今週のトークテーマ",
+    rateLimitError: "ご利用ありがとうございました。続きはお店でお楽しみください！",
+    apiError: "ジョンが飲みすぎてダウン！スタッフを呼んでね！",
+    drunkTitle: "ジョンが日本酒を飲みすぎて寝ちゃった！",
+    drunkSubtitle: "スタッフを呼んでください！",
+    drunkHint: "（ジョン回復中...少し待ってね）",
+  },
+  "ko-KR": {
+    welcome:
+      "안녕하세요! Guu에 오신 걸 환영해요! 저는 John, 디지털 컨시어지예요!\n메뉴는 제가 안내할게요 - 멋진 스태프와 함께 즐거운 시간 보내세요! 뭐가 끌리세요?",
+    placeholder: "메뉴에 대해 물어보세요...",
+    ratingAsk: "어떠셨어요?",
+    ratingThanks: "감사합니다!",
+    talkThemeLabel: "이번 주 토크 테마",
+    rateLimitError: "이용해 주셔서 감사합니다! 나머지는 스태프와 함께 즐겨주세요!",
+    apiError: "이런! John이 술을 너무 많이 마셨어요! 스태프를 불러주세요!",
+    drunkTitle: "이런! John이 사케를 너무 마시고 잠들었어요!",
+    drunkSubtitle: "스태프를 불러주세요!",
+    drunkHint: "(John 회복 중... 잠시만 기다려주세요)",
+  },
+  "zh-CN": {
+    welcome:
+      "嗨！欢迎来到Guu！我是John，您的数字礼宾！\n菜单的事交给我，您尽管享受这里的氛围和超棒的工作人员！想吃点什么？",
+    placeholder: "问我关于菜单的问题...",
+    ratingAsk: "感觉怎么样？",
+    ratingThanks: "谢谢！",
+    talkThemeLabel: "本周聊天主题",
+    rateLimitError: "感谢您的使用！请继续享受店内的美好时光！",
+    apiError: "哎呀！John喝太多清酒了！请叫工作人员！",
+    drunkTitle: "哎呀！John喝太多清酒睡着了！",
+    drunkSubtitle: "请叫工作人员！",
+    drunkHint: "（John恢复中...请稍等）",
+  },
+  "es-ES": {
+    welcome:
+      "Hola! Bienvenido a Guu! Soy John, tu concierge digital!\nYo me encargo del menu - tu disfruta del ambiente y del increible equipo. Que te apetece?",
+    placeholder: "Preguntame sobre el menu...",
+    ratingAsk: "Que tal estuvo?",
+    ratingThanks: "Gracias!",
+    talkThemeLabel: "Tema de conversacion de la semana",
+    rateLimitError: "Gracias por chatear! Disfruta el resto con nuestro increible equipo!",
+    apiError: "Ups! John bebio demasiado sake! Llama a un miembro del equipo!",
+    drunkTitle: "Ups! John bebio demasiado sake y se quedo dormido!",
+    drunkSubtitle: "Por favor llama a un miembro del equipo!",
+    drunkHint: "(John se esta recuperando... intenta en un momento)",
+  },
+  "pt-BR": {
+    welcome:
+      "Oi! Bem-vindo ao Guu! Eu sou o John, seu concierge digital!\nDeixa o cardapio comigo - voce so precisa curtir a vibe e a equipe incrivel daqui. O que te anima?",
+    placeholder: "Pergunte sobre o cardapio...",
+    ratingAsk: "O que achou?",
+    ratingThanks: "Obrigado!",
+    talkThemeLabel: "Tema da conversa da semana",
+    rateLimitError: "Obrigado por conversar! Aproveite o resto com nossa equipe incrivel!",
+    apiError: "Ops! John bebeu sake demais! Chame um membro da equipe!",
+    drunkTitle: "Ops! John bebeu sake demais e caiu no sono!",
+    drunkSubtitle: "Por favor chame um membro da equipe!",
+    drunkHint: "(John esta se recuperando... tente novamente em um momento)",
+  },
+};
+
 const LANGUAGES = [
-  { code: "ja-JP", label: "日本語" },
   { code: "en-US", label: "English" },
+  { code: "ja-JP", label: "日本語" },
   { code: "ko-KR", label: "한국어" },
   { code: "zh-CN", label: "中文" },
   { code: "es-ES", label: "Español" },
@@ -51,7 +148,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
-  const [sttLang, setSttLang] = useState("ja-JP");
+  const [sttLang, setSttLang] = useState("en-US");
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [rated, setRated] = useState(false);
   const [hoveredStar, setHoveredStar] = useState(0);
@@ -63,6 +160,8 @@ export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
   const sendMessageRef = useRef<(text: string) => void>();
+
+  const t = useMemo(() => I18N[sttLang] || I18N["en-US"], [sttLang]);
 
   // ------------------------------------------------------------------
   // Check if a menu item is currently available
@@ -115,17 +214,17 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Welcome message
+  // Welcome message (updates when language changes)
   useEffect(() => {
     setMessages([
       {
         id: "welcome",
         role: "assistant",
-        content:
-          "Hey! Welcome to Guu! I'm John, your digital concierge!\nI'll handle all the menu info - you just enjoy the vibes and the amazing crew here. What are you in the mood for?",
+        content: t.welcome,
       },
     ]);
-  }, []);
+    setRated(false);
+  }, [t.welcome]);
 
   // Auto-scroll
   useEffect(() => {
@@ -190,16 +289,14 @@ export default function Home() {
           {
             id: (Date.now() + 1).toString(),
             role: "assistant",
-            content: isRateLimit
-              ? "ご利用ありがとうございました。続きはお店でお楽しみください。"
-              : "Oops! John drank too much sake! Please call a human staff member!",
+            content: isRateLimit ? t.rateLimitError : t.apiError,
           },
         ]);
       } finally {
         setIsLoading(false);
       }
     },
-    [isLoading, messages]
+    [isLoading, messages, t]
   );
 
   useEffect(() => {
@@ -282,7 +379,7 @@ export default function Home() {
             <p className="text-[10px] text-[#8B7355] tracking-[0.15em] uppercase">Orator</p>
           </div>
         </header>
-        <DrunkJohn />
+        <DrunkJohn title={t.drunkTitle} subtitle={t.drunkSubtitle} hint={t.drunkHint} />
       </main>
     );
   }
@@ -367,7 +464,7 @@ export default function Home() {
           <div className="bg-[#B8D435]/15 border border-[#B8D435]/30 rounded-xl px-4 py-2.5 flex items-center gap-2">
             <span className="text-[#B8D435] text-base flex-shrink-0">&#128172;</span>
             <div>
-              <p className="text-[9px] text-[#8B7355] uppercase tracking-wider font-medium">This Week's Talk Theme</p>
+              <p className="text-[9px] text-[#8B7355] uppercase tracking-wider font-medium">{t.talkThemeLabel}</p>
               <p className="text-sm text-[#3D2B1F] font-medium">{talkTheme}</p>
             </div>
           </div>
@@ -377,7 +474,7 @@ export default function Home() {
       {/* ---- Rating ---- */}
       {userMessageCount >= 3 && !rated && (
         <div className="flex items-center justify-center gap-1 py-2 border-t border-[#D4C4AE]">
-          <span className="text-[11px] text-[#8B7355] mr-2">How was it?</span>
+          <span className="text-[11px] text-[#8B7355] mr-2">{t.ratingAsk}</span>
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
@@ -400,7 +497,7 @@ export default function Home() {
       )}
       {rated && (
         <div className="flex items-center justify-center py-2 border-t border-[#D4C4AE]">
-          <span className="text-[11px] text-[#8B7355]">Thank you!</span>
+          <span className="text-[11px] text-[#8B7355]">{t.ratingThanks}</span>
         </div>
       )}
 
@@ -430,7 +527,7 @@ export default function Home() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask me about the menu..."
+            placeholder={t.placeholder}
             className="flex-1 bg-[#FFF9F0] border border-[#D4C4AE] rounded-full px-5 py-3 text-sm text-[#3D2B1F]
                        placeholder:text-[#8B7355]/50 focus:outline-none focus:border-[#B8D435] transition-colors"
             disabled={isLoading}
