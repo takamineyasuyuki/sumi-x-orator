@@ -2,11 +2,11 @@ export default function DrunkJohn() {
   return (
     <div className="flex flex-col items-center justify-center h-full px-8 text-center gap-6">
       {/* Drunk John: flipped image or fallback */}
-      <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-[#D4C4AE] bg-[#FFF9F0] animate-bounce rotate-180"
+      <div className="w-36 h-36 rounded-full overflow-hidden border-2 border-[#D4C4AE] bg-[#FFF9F0] animate-bounce"
            style={{ animationDuration: "2.5s" }}>
         <img
-          src="/john.jpg"
-          alt="John is napping"
+          src="/john-drunk.jpg"
+          alt="John is hungover"
           className="w-full h-full object-cover"
           onError={(e) => {
             const target = e.currentTarget;

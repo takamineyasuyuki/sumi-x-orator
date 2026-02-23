@@ -6,6 +6,7 @@ so human staff can focus 100% on analog connections with customers.
 """
 
 import os
+import re
 import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -85,6 +86,7 @@ AIであることを前提に、「メニューの説明や事務作業は僕に
    - LOW: 温かい歓迎。丁寧で落ち着いた案内。初めてのお客様向け。
    - MEDIUM: カジュアルで楽しい。ノリが良くなってきた。ドリンクの追加提案も積極的に。
    - HIGH: パーティーモード全開。最大限のハイプ。「もう1杯行こう！」「隣のテーブルに乾杯しよう！」等、場を盛り上げる提案。
+   ※重要: [ENERGY: ...]タグは内部指示であり、お客様への返答テキストに絶対に含めるな。返答はトーンだけ変えよ。
 
 == 追加ルール ==
 - 料理名は常にメニューデータの英語表記のまま使え。翻訳するな。画面上のメニューカードと一致させるため。
@@ -160,7 +162,10 @@ class AIHandler:
 
             chat = self.model.start_chat(history=gemini_history)
             response = chat.send_message(time_prefix + user_message)
-            return response.text.strip()
+            text = response.text.strip()
+            # Strip any leaked [ENERGY: ...] tags from response
+            text = re.sub(r'\[ENERGY:.*?\]\s*', '', text)
+            return text
         except Exception:
             logger.exception("Gemini API error")
             return (
