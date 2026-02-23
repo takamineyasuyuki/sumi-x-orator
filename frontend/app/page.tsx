@@ -214,17 +214,21 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Welcome message (updates when language changes)
+  // Welcome message on mount
   useEffect(() => {
-    setMessages([
-      {
-        id: "welcome",
-        role: "assistant",
-        content: t.welcome,
-      },
-    ]);
-    setRated(false);
-  }, [t.welcome]);
+    setMessages([{ id: "welcome", role: "assistant", content: t.welcome }]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // When language changes, update only the welcome message in-place
+  const prevLangRef = useRef(sttLang);
+  useEffect(() => {
+    if (prevLangRef.current === sttLang) return;
+    prevLangRef.current = sttLang;
+    setMessages((prev) =>
+      prev.map((m) => (m.id === "welcome" ? { ...m, content: t.welcome } : m))
+    );
+  }, [sttLang, t.welcome]);
 
   // Auto-scroll
   useEffect(() => {
