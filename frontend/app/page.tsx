@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Mic, Send, Volume2, VolumeX, MicOff, Globe, Star } from "lucide-react";
+import { Mic, Send, MicOff, Globe, Star } from "lucide-react";
 import ChatBubble from "@/components/ChatBubble";
 import MenuCard from "@/components/MenuCard";
 import DrunkJohn from "@/components/DrunkJohn";
@@ -50,7 +50,6 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [ttsEnabled, setTtsEnabled] = useState(true);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [sttLang, setSttLang] = useState("ja-JP");
   const [showLangPicker, setShowLangPicker] = useState(false);
@@ -134,53 +133,6 @@ export default function Home() {
   }, [messages, isLoading]);
 
   // ------------------------------------------------------------------
-  // TTS
-  // ------------------------------------------------------------------
-  const speak = useCallback(
-    async (text: string) => {
-      if (!ttsEnabled) return;
-      const spokenText = text.replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
-      if (!spokenText) return;
-
-      const hasJapanese = /[\u3040-\u309f\u30a0-\u30ff]/.test(spokenText);
-      const hasKorean = /[\uac00-\ud7af\u1100-\u11ff]/.test(text);
-      const hasChinese = /[\u4e00-\u9fff]/.test(text) && !hasJapanese;
-      const lang = hasJapanese
-        ? "ja-JP"
-        : hasKorean
-        ? "ko-KR"
-        : hasChinese
-        ? "zh-CN"
-        : sttLang === "es-ES"
-        ? "es-ES"
-        : sttLang === "pt-BR"
-        ? "pt-BR"
-        : "en-US";
-
-      try {
-        const res = await fetch(`${API_URL}/api/tts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: spokenText, lang }),
-        });
-        if (!res.ok) throw new Error("TTS API error");
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audio.onended = () => URL.revokeObjectURL(url);
-        audio.play();
-      } catch {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(spokenText);
-        utterance.lang = lang;
-        utterance.rate = 1.0;
-        window.speechSynthesis.speak(utterance);
-      }
-    },
-    [ttsEnabled, sttLang]
-  );
-
-  // ------------------------------------------------------------------
   // Send message (with energy level)
   // ------------------------------------------------------------------
   const sendMessage = useCallback(
@@ -230,7 +182,6 @@ export default function Home() {
         };
         setMessages((prev) => [...prev, aiMsg]);
         setBackendDown(false);
-        speak(data.reply);
       } catch (err) {
         const isRateLimit = err instanceof Error && err.message === "RATE_LIMIT";
         if (!isRateLimit) setBackendDown(true);
@@ -248,7 +199,7 @@ export default function Home() {
         setIsLoading(false);
       }
     },
-    [isLoading, messages, speak]
+    [isLoading, messages]
   );
 
   useEffect(() => {
@@ -380,13 +331,6 @@ export default function Home() {
               </div>
             )}
           </div>
-          <button
-            onClick={() => setTtsEnabled(!ttsEnabled)}
-            className="p-2 text-[#8B7355] hover:text-[#3D2B1F] transition-colors"
-            aria-label={ttsEnabled ? "Mute voice" : "Unmute voice"}
-          >
-            {ttsEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-          </button>
         </div>
       </header>
 
