@@ -3,7 +3,8 @@ SUMI X Orator - Menu & Staff Database
 Google Sheets with time-based caching for real-time admin sync.
 
 Menu schema: 提供中 | メニュー名 | カテゴリー | 担当シェフ | 魅力・特徴 | アレルギー・注意 | 価格
-Staff schema: 出勤 | 名前 | リスペクト要素
+Staff schema: 出勤 | 名前 | リスペクト要素 | トークタグ
+Config schema: key | value
 """
 
 import os
@@ -36,7 +37,8 @@ class MenuDatabase:
             raise RuntimeError("GOOGLE_SHEET_ID is not set")
         self._spreadsheet = client.open_by_key(sheet_id)
         self._menu_sheet = self._spreadsheet.worksheet("Menu")
-        self._staff_sheet = self._get_or_create_sheet("Staff", cols=3)
+        self._staff_sheet = self._get_or_create_sheet("Staff", cols=4)
+        self._config_sheet = self._get_or_create_sheet("Config", cols=2, header=["key", "value"])
         self._ratings_sheet = self._get_or_create_sheet("Ratings", cols=4,
                                                          header=["timestamp", "rating", "message_count", "lang"])
         self._menu_items: list[dict] = []
@@ -139,7 +141,7 @@ class MenuDatabase:
         ]
 
     def get_staff_context(self) -> str:
-        """Build a text summary of working staff for the AI prompt."""
+        """Build a text summary of working staff for the AI prompt, including talk tags."""
         working = self.get_working_staff()
         if not working:
             return "今日の出勤スタッフ情報はまだ登録されていません。"
@@ -147,12 +149,33 @@ class MenuDatabase:
         for s in working:
             name = s.get("名前", "")
             respect = s.get("リスペクト要素", "")
+            tags = s.get("トークタグ", "")
             if name:
                 line = f"- {name}"
                 if respect:
                     line += f": {respect}"
+                if tags:
+                    line += f" [話題タグ: {tags}]"
                 lines.append(line)
         return "今日の出勤スタッフ:\n" + "\n".join(lines)
+
+    # ------------------------------------------------------------------
+    # Config
+    # ------------------------------------------------------------------
+    def get_config(self, key: str, default: str = "") -> str:
+        """Read a value from the Config sheet by key."""
+        try:
+            records = self._config_sheet.get_all_records()
+            for r in records:
+                if r.get("key") == key:
+                    return str(r.get("value", default))
+        except Exception:
+            logger.warning("Config read failed for key=%s", key)
+        return default
+
+    def get_talk_theme(self) -> str:
+        """Get the current weekly talk theme."""
+        return self.get_config("talk_theme", "")
 
     # ------------------------------------------------------------------
     # Lightweight availability (polling - columns A+B only)

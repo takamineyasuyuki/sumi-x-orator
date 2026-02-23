@@ -97,9 +97,15 @@ class ChatMessage(BaseModel):
     content: str
 
 
+class EnergyContext(BaseModel):
+    message_count: int = 0
+    drink_mentions: int = 0
+
+
 class ChatRequest(BaseModel):
     message: str
     history: list[ChatMessage] = []
+    energy_context: EnergyContext | None = None
 
 
 class ChatResponse(BaseModel):
@@ -141,8 +147,20 @@ async def chat(request: Request, req: ChatRequest):
     # Build conversation history
     history = [{"role": msg.role, "content": msg.content} for msg in req.history]
 
+    # Energy scaling context
+    energy_hint = ""
+    if req.energy_context:
+        mc = req.energy_context.message_count
+        dc = req.energy_context.drink_mentions
+        if dc >= 3 or mc >= 10:
+            energy_hint = "[ENERGY: HIGH - party mode, max hype, suggest fun interactions] "
+        elif dc >= 1 or mc >= 4:
+            energy_hint = "[ENERGY: MEDIUM - casual and fun, more playful] "
+        else:
+            energy_hint = "[ENERGY: LOW - warm welcome, helpful and calm] "
+
     # Generate response
-    reply = ai.generate_response(req.message, history)
+    reply = ai.generate_response(energy_hint + req.message, history)
 
     # Find menu items mentioned in the response
     menu_items = db.find_mentioned_items(reply) if db else []
@@ -222,6 +240,15 @@ async def toggle_menu_item(req: ToggleRequest):
     if not ok:
         raise HTTPException(status_code=404, detail="Menu item not found")
     return {"status": "ok", "menu_name": req.menu_name, "available": req.available}
+
+
+@app.get("/api/config/talk-theme")
+async def talk_theme():
+    """Get the current weekly talk theme from Config sheet."""
+    if not db:
+        raise HTTPException(status_code=503, detail="Database not connected")
+    theme = db.get_talk_theme()
+    return {"theme": theme}
 
 
 @app.get("/health")

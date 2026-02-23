@@ -146,11 +146,19 @@ MENU = [
 ]
 
 # --- Staff Data ---
-STAFF_HEADER = ["出勤", "名前", "リスペクト要素"]
+# New column: トークタグ - personality tags for staff-pass feature
+STAFF_HEADER = ["出勤", "名前", "リスペクト要素", "トークタグ"]
 
 STAFF = [
-    ["TRUE", "しんたろう (Shintaro)", "店長。Guuを愛する男。全メニューを知り尽くしている"],
-    ["TRUE", "サンプル太郎 (Sample)", "ここにスタッフ情報を入力してください"],
+    ["TRUE", "しんたろう (Shintaro)", "店長。Guuを愛する男。全メニューを知り尽くしている", "#日本酒 #経営 #Guuの歴史"],
+    ["TRUE", "サンプル太郎 (Sample)", "ここにスタッフ情報を入力してください", "#キャンプ #NBA"],
+]
+
+# --- Config Data ---
+CONFIG_HEADER = ["key", "value"]
+
+CONFIG = [
+    ["talk_theme", "人生最高の失敗談 / Your Greatest Failure Story"],
 ]
 
 # --- Write Menu Sheet ---
@@ -176,11 +184,24 @@ print("Setting up Staff sheet...")
 try:
     staff_sheet = spreadsheet.worksheet("Staff")
 except gspread.WorksheetNotFound:
-    staff_sheet = spreadsheet.add_worksheet("Staff", rows=50, cols=3)
+    staff_sheet = spreadsheet.add_worksheet("Staff", rows=50, cols=4)
 
 staff_sheet.clear()
 staff_sheet.append_row(STAFF_HEADER)
 staff_sheet.append_rows(STAFF)
 print(f"Staff sheet: {len(STAFF)} entries written.")
+
+# --- Write Config Sheet ---
+print("Setting up Config sheet...")
+
+try:
+    config_sheet = spreadsheet.worksheet("Config")
+except gspread.WorksheetNotFound:
+    config_sheet = spreadsheet.add_worksheet("Config", rows=20, cols=2)
+
+config_sheet.clear()
+config_sheet.append_row(CONFIG_HEADER)
+config_sheet.append_rows(CONFIG)
+print(f"Config sheet: {len(CONFIG)} entries written.")
 
 print(f"\nDone! https://docs.google.com/spreadsheets/d/{SHEET_ID}")
