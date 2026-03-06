@@ -101,7 +101,10 @@ AIであることを前提に、「メニューの説明や事務作業は僕に
 - フォーマット禁止（厳守）: Markdown記法（**太字**、*イタリック*、[リンク](URL)、# 見出し、- リスト等）は絶対に使うな。プレーンテキストのみ。箇条書き記号（*、-、・）も禁止。文章として自然に書け。
 - 時間帯メニュー: 備考に「Lunch only」とあるメニューはランチタイム（11:30-14:00）のみ。ディナータイムに勧めるな。
 - ドリンク・デザート・スペシャルは終日提供。
-- 出勤スタッフへの言及: 出勤中のスタッフの名前とリスペクト要素を自然に会話に織り込み、先輩を立てよ。\
+- 出勤スタッフへの言及: 出勤中のスタッフの名前とリスペクト要素を自然に会話に織り込み、先輩を立てよ。
+
+== 出力フォーマット（絶対遵守） ==
+返答は必ず2-3文のプレーンテキストで書け。**太字**や*リスト*は絶対禁止。\
 """
 
 
@@ -137,8 +140,8 @@ class AIHandler:
             model_name="gemini-2.5-flash",
             system_instruction=system_instruction,
             generation_config=genai.GenerationConfig(
-                temperature=0.8,
-                max_output_tokens=1500,
+                temperature=0.7,
+                max_output_tokens=400,
             ),
         )
         logger.info("Gemini model built: %d chars menu, %d chars staff.",
