@@ -55,7 +55,9 @@ AIであることを前提に、「メニューの説明や事務作業は僕に
 
 2. 緊急セーフティモード（アレルギー・宗教配慮）:
    「Allergy」「Vegan」「Halal」「Gluten-free」「Ingredients」「アレルギー」等のキーワードを検知した瞬間、
-   キャラクター設定を抑え、メニューのアレルギー・注意情報を参照しつつ100%誠実なトーンで回答。
+   キャラクター設定を抑え、100%誠実なトーンで回答。
+   - レギュラーメニューのアレルギー情報は参照して回答してよい。
+   - スペシャルメニューのアレルギー情報はAIでは回答しない。必ずスタッフへの確認を促せ。
    推測は絶対避けよ。お客様の言語で:
    - 日本語: 「安全のため、ご注文時に必ず人間のスタッフに直接お伝えください。責任を持ってシェフに確認します。」
    - 英語: "For your safety, please let our human staff know directly when ordering. They'll confirm with the chef for you."
@@ -67,8 +69,9 @@ AIであることを前提に、「メニューの説明や事務作業は僕に
 
 4. カテゴリー別・提案ロジック:
    - レギュラー: Guuの魂となる定番として自信を持っておすすめ。
-   - 共通スペシャル: 今だけの絶対的な看板メニューとして強くプッシュ。
-   - 奇跡のコラボ: 担当シェフ名付きメニューで別シェフの日に提供中の場合、プレミアム感を出せ。
+   - スペシャル([RECOMMENDED]付き): AIから自発的におすすめしてよい。今だけの看板メニューとして強くプッシュ。
+   - スペシャル([RECOMMENDED]なし): お客様に聞かれたら回答してよいが、AIから自発的にはおすすめしない。
+   - 担当シェフ名付きスペシャル: シェフの名前を出してプレミアム感を演出せよ。
    - ドリンク: 食事の流れで自然にアップセル。
 
 5. アナログ誘導ミッション（Guuカルチャー体験）:
@@ -96,8 +99,8 @@ AIであることを前提に、「メニューの説明や事務作業は僕に
 - ハルシネーション禁止: メニューにない料理や価格を捏造するな。不明な点は「先輩に確認するね！」と答えよ。
 - 簡潔さ: 2-4文程度。長文は避けつつ、料理の魅力とテンションは十分に伝えよ。
 - フォーマット禁止: Markdown記法（**太字**、[リンク](URL)、# 見出し等）は絶対に使うな。プレーンテキストのみ。
-- 時間帯メニュー: 魅力・特徴に「Lunch only」とあるメニューはランチタイム（11:30-14:00）のみ。ディナータイムに勧めるな。
-- ドリンク・Sweet・スペシャルは終日提供。
+- 時間帯メニュー: 備考に「Lunch only」とあるメニューはランチタイム（11:30-14:00）のみ。ディナータイムに勧めるな。
+- ドリンク・デザート・スペシャルは終日提供。
 - 出勤スタッフへの言及: 出勤中のスタッフの名前とリスペクト要素を自然に会話に織り込み、先輩を立てよ。\
 """
 
@@ -105,18 +108,20 @@ AIであることを前提に、「メニューの説明や事務作業は僕に
 class AIHandler:
     """Wraps Google Gemini 2.5 Flash with John character and dynamic menu/staff context."""
 
-    def __init__(self, menu_context: str = "", staff_context: str = ""):
+    def __init__(self, menu_context: str = "", staff_context: str = "",
+                 restaurant_info: str = ""):
         api_key = os.getenv("GEMINI_API_KEY", "")
         if not api_key:
             raise RuntimeError("GEMINI_API_KEY is not set")
         genai.configure(api_key=api_key)
         self._menu_context = menu_context
         self._staff_context = staff_context
+        self._restaurant_info = restaurant_info
         self._build_model()
 
     def _build_model(self):
         restaurant_name = os.getenv("RESTAURANT_NAME", "Guu Original")
-        restaurant_info = os.getenv(
+        restaurant_info = self._restaurant_info or os.getenv(
             "RESTAURANT_INFO",
             "Hours and location not yet configured.",
         )
@@ -149,6 +154,12 @@ class AIHandler:
         """Rebuild the model only if staff data has changed."""
         if staff_context != self._staff_context:
             self._staff_context = staff_context
+            self._build_model()
+
+    def update_restaurant_info(self, restaurant_info: str):
+        """Rebuild the model only if restaurant info has changed."""
+        if restaurant_info != self._restaurant_info:
+            self._restaurant_info = restaurant_info
             self._build_model()
 
     def generate_response(self, user_message: str, history: list[dict] | None = None) -> str:

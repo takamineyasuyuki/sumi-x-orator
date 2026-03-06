@@ -1,6 +1,7 @@
 """
-Populate Google Sheets with Guu Original Thurlow menu data (new schema).
-Creates two sheets: "Menu" and "Staff".
+Populate Google Sheets with Guu Original Thurlow menu data (v2 schema).
+Creates sheets: レギュラーメニュー / スペシャルメニュー / 店舗情報
+Keeps existing: Staff / Ratings
 Run once: python populate_sheets.py
 """
 
@@ -13,195 +14,329 @@ SCOPES = [
 ]
 
 # --- Credentials ---
-CREDS_FILE = "/Users/takamineyasuyuki/Downloads/guu2026-bf7c5f3119f8.json"
+CREDS_FILE = "/Users/takamineyasuyuki/Downloads/sumi-x-brand/guu/guu2026-bf7c5f3119f8.json"
 SHEET_ID = "1_f6FvqFl8DOVebscUNO8-fQwsEpiKYjQHHlOxJTaCdk"
 
 creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
 client = gspread.authorize(creds)
 spreadsheet = client.open_by_key(SHEET_ID)
 
-# --- Menu Data ---
-# Headers: 提供中 | メニュー名 | カテゴリー | 担当シェフ | 魅力・特徴 | アレルギー・注意 | 価格
-MENU_HEADER = ["提供中", "メニュー名", "カテゴリー", "担当シェフ", "魅力・特徴", "アレルギー・注意", "価格"]
-
-# TRUE = currently served, メニュー名 = English name, カテゴリー = レギュラー/ドリンク/etc, 担当シェフ = blank for now
-MENU = [
-    # ========== DINNER - ODEN ==========
-    ["TRUE", "Assorted Oden", "レギュラー", "", "5pc chef's choice, Japanese hot pot with fish broth", "", 14],
-    ["TRUE", "Daikon", "レギュラー", "", "Japanese radish in fish broth", "", 3.5],
-    ["TRUE", "Egg", "レギュラー", "", "Soft boiled egg in fish broth", "", 3.5],
-    ["TRUE", "Yam Noodles", "レギュラー", "", "Shirataki noodles in fish broth", "", 3.5],
-    ["TRUE", "Deep-fried Tofu", "レギュラー", "", "Atsuage tofu in fish broth", "", 3.5],
-    ["TRUE", "Sticky Rice Cake", "レギュラー", "", "Mochi kinchaku in fish broth", "", 3.5],
-    ["TRUE", "Fish Cake", "レギュラー", "", "Chikuwa in fish broth", "", 3.5],
-
-    # ========== DINNER - SALAD ==========
-    ["TRUE", "Daikon Salad", "レギュラー", "", "Daikon radish & jellyfish salad w/ Guu dressing", "", 11],
-    ["TRUE", "Sashimi Salad", "レギュラー", "", "Assorted sashimi salad w/ plum dressing & wasabi mayo", "fish", 17],
-
-    # ========== DINNER - APPETIZER ==========
-    ["TRUE", "Salmon Yukke", "レギュラー", "", "Chopped salmon sashimi w/ garlic teriyaki sauce", "fish", 12],
-    ["TRUE", "Monkfish Liver", "レギュラー", "", "Monkfish liver w/ ponzu sauce", "fish", 11],
-    ["TRUE", "Pumpkin Croquette", "レギュラー", "", "Pumpkin & boiled egg croquette", "egg, gluten", 10],
-    ["TRUE", "Agedashi Tofu", "レギュラー", "", "Deep-fried tofu & spicy cod roe w/ dashi broth", "soy", 10],
-    ["TRUE", "Baked Broccoli", "レギュラー", "", "Baked broccoli w/ teriyaki sauce & mayo", "egg", 9],
-    ["TRUE", "Takoyaki", "レギュラー", "", "Deep-fried octopus balls w/ tonkatsu sauce & mustard mayo", "gluten, egg", 9],
-    ["TRUE", "Takowasabi", "レギュラー", "", "Marinated chopped octopus w/ wasabi stem", "", 7],
-    ["TRUE", "Fukahire", "レギュラー", "", "Marinated jellyfish w/ sesame", "", 7],
-    ["TRUE", "Edamame", "レギュラー", "", "Boiled edamame beans w/ sea salt", "soy", 6.5],
-    ["TRUE", "Miso Soup", "レギュラー", "", "w/ green onion, wakame seaweed", "soy", 3],
-
-    # ========== DINNER - MEAT ==========
-    ["TRUE", "Diced Beef Hanger Steak with Garlic", "レギュラー", "", "Pan-fried beef hanger steak, mushroom & garlic w/ spicy mayo", "", 26],
-    ["TRUE", "Beef Hanger Steak with Chives", "レギュラー", "", "Pan-fried beef hanger steak, chives, onion & Chinese celery w/ oriental sauce", "", 18],
-    ["TRUE", "Karaage", "レギュラー", "", "Deep-fried chicken w/ garlic mayo", "gluten, egg", 14],
-    ["TRUE", "Tontoro", "レギュラー", "", "Grilled pork cheek w/ yuzu ponzu sauce", "", 11],
-    ["TRUE", "Beef Tataki", "レギュラー", "", "Thinly sliced seared rare beef w/ green onion, garlic chips, ponzu sauce & wasabi mayo", "", 14],
-
-    # ========== DINNER - SEAFOOD ==========
-    ["TRUE", "Tuna & Salmon Tataki", "レギュラー", "", "w/ green onion, garlic chips, ponzu sauce", "fish", 18],
-    ["TRUE", "Ebi Mayo", "レギュラー", "", "Deep fried prawn w/ chili mayo", "shellfish, egg", 15],
-    ["TRUE", "Ikamaru", "レギュラー", "", "Grilled whole squid w/ garlic mayo", "", 15],
-    ["TRUE", "Spicy Calamari", "レギュラー", "", "Deep-fried squid w/ spicy mayo", "gluten", 14],
-    ["TRUE", "Negitoro", "レギュラー", "", "Chopped tuna sashimi w/ green onion", "fish", 12],
-    ["TRUE", "Saba Mackerel", "レギュラー", "", "Grilled saba w/ salt", "fish", 13],
-
-    # ========== DINNER - RICE & NOODLES ==========
-    ["TRUE", "Yaki Udon", "レギュラー", "", "Pan-fried udon w/ beef, mushroom, green onion, fish broth, bonito, soy sauce & butter", "gluten, soy", 17.5],
-    ["TRUE", "Kimchi Udon", "レギュラー", "", "Marinated udon w/ spicy cod roe, kimchi, green onion, soy sauce & butter", "gluten, soy", 17],
-    ["TRUE", "Kimchi Fried Rice", "レギュラー", "", "w/ kimchi, green onion, bacon & egg", "egg", 17],
-    ["TRUE", "Okonomi Yaki", "レギュラー", "", "Deep-fried Japanese pancake w/ tonkatsu sauce, mustard mayo", "gluten, egg", 16],
-    ["TRUE", "Modern Yaki", "レギュラー", "", "Deep-fried Japanese pancake & yakisoba noodles w/ tonkatsu sauce, mustard mayo & cheese", "gluten, egg, dairy", 20],
-    ["TRUE", "BBQ Eel Rice", "レギュラー", "", "BBQ eel & egg on rice", "fish, egg", 19],
-    ["TRUE", "Rice", "レギュラー", "", "Steamed white rice", "", 3],
-
-    # ========== DINNER - SWEET ==========
-    ["TRUE", "Yuzu Cheese Cake w/ Green Tea Ice Cream", "レギュラー", "", "Yuzu cheesecake with matcha ice cream", "dairy, egg, gluten", 8],
-    ["TRUE", "Cream Daifuku w/ Green Tea Ice Cream", "レギュラー", "", "Mochi daifuku with matcha ice cream. Ask your server about today's available flavors!", "dairy", 8],
-    ["TRUE", "Green Tea Ice Cream", "レギュラー", "", "Matcha ice cream", "dairy", 5],
-
-    # ========== LUNCH ONLY - TEISHOKU ==========
-    ["TRUE", "BBQ Beef Tei", "レギュラー", "", "BBQ beef, onion, mushroom, sweet spicy soy sauce. Comes w/ rice, miso soup & side dish. [Lunch only 11:30-14:00]", "soy", 17.5],
-    ["TRUE", "Saba Tei", "レギュラー", "", "Grilled saba mackerel w/ salt. Comes w/ rice, miso soup & side dish. [Lunch only 11:30-14:00]", "fish", 15.5],
-    ["TRUE", "Sake Tei", "レギュラー", "", "Grilled Atlantic salmon w/ yuzu soy sauce. Comes w/ rice, miso soup & side dish. [Lunch only 11:30-14:00]", "fish, soy", 16.5],
-    ["TRUE", "Age Tei", "レギュラー", "", "Chicken karaage, pork cutlet & creamy croquette. Comes w/ rice, miso soup & side dish. [Lunch only 11:30-14:00]", "gluten, egg", 16.5],
-    ["TRUE", "Tuna & Salmon Tataki Tei", "レギュラー", "", "w/ green onion, garlic chips, ponzu sauce. Comes w/ rice, miso soup & side dish. [Lunch only 11:30-14:00]", "fish", 20],
-    ["TRUE", "Sashi Tei", "レギュラー", "", "Assorted sashimi (albacore tuna, Atlantic salmon, scallop & spot prawn). Comes w/ rice, miso soup & side dish. [Lunch only 11:30-14:00]", "fish, shellfish", 24],
-
-    # ========== LUNCH ONLY - YOSHOKU ==========
-    ["TRUE", "Curry", "レギュラー", "", "Beef curry w/ rice. Comes w/ salad and side dish. [Lunch only 11:30-14:00]", "", 15],
-    ["TRUE", "Katsu-Curry", "レギュラー", "", "Pork cutlet & beef curry w/ rice. Comes w/ salad and side dish. [Lunch only 11:30-14:00]", "gluten", 17.5],
-    ["TRUE", "Doria", "レギュラー", "", "Rice gratin w/ cream sauce, corn, onion, chicken & cheese. Comes w/ salad and side dish. [Lunch only 11:30-14:00]", "dairy, gluten", 15],
-    ["TRUE", "Curry Doria", "レギュラー", "", "Rice gratin w/ curry, cream sauce, corn, onion, chicken & cheese. Comes w/ salad and side dish. [Lunch only 11:30-14:00]", "dairy, gluten", 15.5],
-
-    # ========== LUNCH ONLY - DONBURI ==========
-    ["TRUE", "Yakitori Don", "レギュラー", "", "Grilled teriyaki chicken & onion on rice. Comes w/ miso soup and side dish. [Lunch only 11:30-14:00]", "soy", 15],
-    ["TRUE", "Karaage Don", "レギュラー", "", "Chicken karaage on rice w/ fish broth. Comes w/ miso soup and side dish. [Lunch only 11:30-14:00]", "gluten", 15],
-    ["TRUE", "Tamago Toji Don", "レギュラー", "", "Chicken karaage, egg & onion on rice w/ fish broth. Comes w/ miso soup and side dish. [Lunch only 11:30-14:00]", "gluten, egg", 16],
-    ["TRUE", "Katsu Don", "レギュラー", "", "Pork cutlet, egg & onion on rice w/ fish broth. Comes w/ miso soup and side dish. [Lunch only 11:30-14:00]", "gluten, egg", 16],
-
-    # ========== LUNCH ONLY - IZAKAYA ==========
-    ["TRUE", "Pork Cutlet", "レギュラー", "", "Deep fried pork cutlet. [Lunch only 11:30-14:00]", "gluten", 13],
-    ["TRUE", "Creamy Croquette", "レギュラー", "", "Cream chicken & corn croquette. [Lunch only 11:30-14:00]", "dairy, gluten, egg", 7],
-
-    # ========== DRINKS - BEER ==========
-    ["TRUE", "Sapporo Draft", "ドリンク", "", "16oz pint. Also: 5.5/10oz sleeve, 23/60oz pitcher", "", 8],
-    ["TRUE", "Asahi", "ドリンク", "", "620ml bottle", "", 12.5],
-    ["TRUE", "Happyness IPA", "ドリンク", "", "Superflux, 12oz", "", 8.5],
-    ["TRUE", "Flagship Hazy IPA", "ドリンク", "", "Steam Works, 355ml can", "", 6],
-    ["TRUE", "Mango Beer", "ドリンク", "", "16oz", "", 8],
-    ["TRUE", "Lychee Beer", "ドリンク", "", "16oz", "", 8],
-
-    # ========== DRINKS - HARD LIQUOR ==========
-    ["TRUE", "Gin Bombay", "ドリンク", "", "1oz (12/2oz). Mix with coke/diet coke/ginger ale +$0.5", "", 7.5],
-    ["TRUE", "Tequila Jose Cuervo", "ドリンク", "", "1oz (12/2oz). Mix with coke/diet coke/ginger ale +$0.5", "", 7.5],
-    ["TRUE", "Whisky Crown Royal", "ドリンク", "", "1oz (12/2oz). Mix with coke/diet coke/ginger ale +$0.5", "", 7.5],
-    ["TRUE", "Whisky Jameson", "ドリンク", "", "1oz (12/2oz). Mix with coke/diet coke/ginger ale +$0.5", "", 7.5],
-
-    # ========== DRINKS - SHOCHU ==========
-    ["TRUE", "Dan-Dan Shochu", "ドリンク", "", "Sweet potato shochu. 1oz (12/2oz, 95/720ml)", "", 7],
-    ["TRUE", "Tan Taka Tan Shochu", "ドリンク", "", "Shiso herb shochu. 1oz (12/2oz, 95/720ml)", "", 7],
-    ["TRUE", "Ichiko Shochu", "ドリンク", "", "Barley shochu. 1oz (12/2oz, 80/900ml)", "", 7],
-
-    # ========== DRINKS - SANGRIA ==========
-    ["TRUE", "Original Red Sangria", "ドリンク", "", "200ml (23/800ml pitcher)", "", 7.5],
-    ["TRUE", "Citrus White Sangria", "ドリンク", "", "200ml (23/800ml pitcher)", "", 7.5],
-
-    # ========== DRINKS - COCKTAIL ==========
-    ["TRUE", "High Ball", "ドリンク", "", "Whisky, pop (soda/coke/ginger ale). 2oz +$4", "", 8],
-    ["TRUE", "Sake Mojito", "ドリンク", "", "Sake, plum wine, mint, ramune", "", 9],
-    ["TRUE", "Gin Yuzu Soda", "ドリンク", "", "Gin, yuzu, ginger ale", "", 9],
-    ["TRUE", "Lychee Lychee", "ドリンク", "", "Soho, vodka, lychee juice", "", 9],
-    ["TRUE", "Snow White", "ドリンク", "", "Soho, calpico, lemon, ramune", "", 9],
-    ["TRUE", "Lemon Hi", "ドリンク", "", "Vodka, lemon juice, soda", "", 8],
-    ["TRUE", "Oolong Hi", "ドリンク", "", "Vodka, oolong tea", "", 8],
-
-    # ========== DRINKS - SOFT DRINK ==========
-    ["TRUE", "GUUUD! Ramune", "ドリンク", "", "Japanese ramune soda bottle", "", 4.5],
-    ["TRUE", "Sparkling Water", "ドリンク", "", "Bottle", "", 3.5],
-
-    # ========== HAPPY HOUR SPECIALS ==========
-    ["TRUE", "Van Go Funk! Junmai Sake", "共通スペシャル", "", "250ml. Happy Hour: everyday 11:30am-2pm & 9pm-close", "", 23],
-    ["TRUE", "3 Kinds of Sashimi Chef's Choice", "共通スペシャル", "", "February - May only. Happy Hour: everyday 11:30am-2pm & 9pm-close", "fish", 28],
+# =====================================================================
+# Sheet 1: レギュラーメニュー
+# カテゴリ | メニュー名(日) | メニュー名(英) | メニュー説明(英) | 値段
+# | 写真URL | 味・特徴 | 量感 | アレルギー情報 | おすすめ組み合わせ | 備考
+# =====================================================================
+REGULAR_HEADER = [
+    "提供中", "カテゴリ", "メニュー名(日)", "メニュー名(英)", "メニュー説明(英)", "値段",
+    "写真URL", "味・特徴", "量感", "アレルギー情報", "おすすめ組み合わせ", "備考",
 ]
 
-# --- Staff Data ---
-# New column: トークタグ - personality tags for staff-pass feature
-STAFF_HEADER = ["出勤", "名前", "リスペクト要素", "トークタグ"]
+# 提供中 = TRUE (default for all items, staff toggles to FALSE when sold out)
+REGULAR_MENU = [
+    # ========== ODEN ==========
+    [True, "おでん", "おでん盛り合わせ", "Assorted Oden", "5pc chef's choice, Japanese hot pot with fish broth", 14,
+     "", "", "シェアにちょうどいい", "", "日本酒に合う", ""],
+    [True, "おでん", "大根", "Daikon", "Japanese radish in fish broth", 3.5,
+     "", "じっくり煮込んだ大根、出汁が染みて柔らかい", "おでんの追加1品に", "", "", ""],
+    [True, "おでん", "たまご", "Egg", "Soft boiled egg in fish broth", 3.5,
+     "", "半熟卵にお出汁がしみしみ", "おでんの追加1品に", "egg", "", ""],
+    [True, "おでん", "しらたき", "Yam Noodles", "Shirataki noodles in fish broth", 3.5,
+     "", "つるっとした食感、ヘルシー", "おでんの追加1品に", "", "", ""],
+    [True, "おでん", "厚揚げ", "Deep-fried Tofu", "Atsuage tofu in fish broth", 3.5,
+     "", "外はカリッと中はふわっと、出汁を吸った豆腐", "おでんの追加1品に", "soy", "", ""],
+    [True, "おでん", "もちきんちゃく", "Sticky Rice Cake", "Mochi kinchaku in fish broth", 3.5,
+     "", "油揚げの中にもちもちのお餅", "おでんの追加1品に", "", "", ""],
+    [True, "おでん", "ちくわ", "Fish Cake", "Chikuwa in fish broth", 3.5,
+     "", "定番の練り物、出汁との相性抜群", "おでんの追加1品に", "fish", "", ""],
 
-STAFF = [
-    ["TRUE", "しんたろう (Shintaro)", "店長。Guuを愛する男。全メニューを知り尽くしている", "#日本酒 #経営 #Guuの歴史"],
-    ["TRUE", "サンプル太郎 (Sample)", "ここにスタッフ情報を入力してください", "#キャンプ #NBA"],
+    # ========== SALAD ==========
+    [True, "サラダ", "大根サラダ", "Daikon Salad", "Daikon radish & jellyfish salad w/ Guu dressing", 11,
+     "", "さっぱりシャキシャキ、Guuオリジナルドレッシング", "2人でシェアにちょうどいい", "jellyfish", "", ""],
+    [True, "サラダ", "刺身サラダ", "Sashimi Salad", "Assorted sashimi salad w/ plum dressing & wasabi mayo", 17,
+     "", "新鮮な刺身と梅ドレッシングの爽やかな組み合わせ", "2人でシェアにちょうどいい", "fish, egg", "", ""],
+
+    # ========== APPETIZER ==========
+    [True, "前菜", "サーモンユッケ", "Salmon Yukke", "Chopped salmon sashimi w/ garlic teriyaki sauce", 12,
+     "", "ガーリックテリヤキソースが効いたGuuの定番", "1-2人前", "fish", "ビールに合う", "Guuクラシック"],
+    [True, "前菜", "あん肝", "Monkfish Liver", "Monkfish liver w/ ponzu sauce", 11,
+     "", "クリーミーで濃厚、ポン酢でさっぱり", "1-2人前", "fish", "日本酒に合う", ""],
+    [True, "前菜", "かぼちゃコロッケ", "Pumpkin Croquette", "Pumpkin & boiled egg croquette", 10,
+     "", "甘いかぼちゃとゆで卵、外はサクサク", "1-2人前", "egg, gluten", "", ""],
+    [True, "前菜", "揚げ出し豆腐", "Agedashi Tofu", "Deep-fried tofu & spicy cod roe w/ dashi broth", 10,
+     "", "明太子入りの揚げ出し豆腐、出汁が美味しい", "1-2人前", "soy", "", ""],
+    [True, "前菜", "焼きブロッコリー", "Baked Broccoli", "Baked broccoli w/ teriyaki sauce & mayo", 9,
+     "", "テリヤキソースとマヨの香ばしい組み合わせ", "1-2人前", "egg", "", ""],
+    [True, "前菜", "たこ焼き", "Takoyaki", "Deep-fried octopus balls w/ tonkatsu sauce & mustard mayo", 9,
+     "", "揚げたてアツアツ、マスタードマヨがアクセント", "2-3人でシェア向き", "gluten, egg", "ビールに合う", ""],
+    [True, "前菜", "たこわさび", "Takowasabi", "Marinated chopped octopus w/ wasabi stem", 7,
+     "", "コリコリ食感にわさびのピリッとした刺激", "おつまみに最適", "", "日本酒・ビールに合う", ""],
+    [True, "前菜", "くらげ", "Fukahire", "Marinated jellyfish w/ sesame", 7,
+     "", "コリコリ食感、ごま油の香り", "おつまみに最適", "jellyfish", "", ""],
+    [True, "前菜", "枝豆", "Edamame", "Boiled edamame beans w/ sea salt", 6.5,
+     "", "シンプルに塩茹で、ビールのお供に", "軽いおつまみ", "soy", "ビールに合う", ""],
+    [True, "汁物", "味噌汁", "Miso Soup", "w/ green onion, wakame seaweed", 3,
+     "", "ネギとわかめのシンプルな味噌汁", "1人前", "soy, fish", "", ""],
+
+    # ========== MEAT ==========
+    [True, "肉料理", "サイコロステーキ ガーリック", "Diced Beef Hanger Steak with Garlic", "Pan-fried beef hanger steak, mushroom & garlic w/ spicy mayo", 26,
+     "", "ガーリックとスパイシーマヨの豪快な一皿", "1-2人でシェア", "", "赤ワイン・ビールに合う", ""],
+    [True, "肉料理", "ハンガーステーキ ニラ", "Beef Hanger Steak with Chives", "Pan-fried beef hanger steak, chives, onion & Chinese celery w/ oriental sauce", 18,
+     "", "ニラとセロリのオリエンタルソースが食欲をそそる", "1-2人前", "", "", ""],
+    [True, "肉料理", "唐揚げ", "Karaage", "Deep-fried chicken w/ garlic mayo", 14,
+     "", "Guuの看板メニュー！ガーリックマヨが最高", "2-3人でシェア向き", "gluten, egg", "ビールに合う", "Guuの名物"],
+    [True, "肉料理", "トントロ", "Tontoro", "Grilled pork cheek w/ yuzu ponzu sauce", 11,
+     "", "脂がジューシー、柚子ポン酢でさっぱり", "1-2人前", "", "焼酎に合う", ""],
+    [True, "肉料理", "ビーフタタキ", "Beef Tataki", "Thinly sliced seared rare beef w/ green onion, garlic chips, ponzu sauce & wasabi mayo", 14,
+     "", "レアに焼いた牛肉、ガーリックチップスとわさびマヨ", "1-2人前", "", "", ""],
+
+    # ========== SEAFOOD ==========
+    [True, "海鮮", "ツナ＆サーモンタタキ", "Tuna & Salmon Tataki", "w/ green onion, garlic chips, ponzu sauce", 18,
+     "", "2種の魚を炙って、ポン酢とガーリックチップスで", "2人でシェアにちょうどいい", "fish", "日本酒に合う", ""],
+    [True, "海鮮", "エビマヨ", "Ebi Mayo", "Deep fried prawn w/ chili mayo", 15,
+     "", "プリプリ海老にGuuのチリマヨソース", "2人でシェア向き", "shellfish, egg", "", ""],
+    [True, "海鮮", "イカ丸焼き", "Ikamaru", "Grilled whole squid w/ garlic mayo", 15,
+     "", "丸ごと1杯焼いたイカ、ガーリックマヨで", "2人でシェア向き", "squid", "ビール・ハイボールに合う", ""],
+    [True, "海鮮", "スパイシーカラマリ", "Spicy Calamari", "Deep-fried squid w/ spicy mayo", 14,
+     "", "カリッと揚げたイカリング、スパイシーマヨ", "2-3人でシェア向き", "squid, gluten", "ビールに合う", ""],
+    [True, "海鮮", "ネギトロ", "Negitoro", "Chopped tuna sashimi w/ green onion", 12,
+     "", "たたきマグロとネギのシンプルな美味しさ", "1-2人前", "fish", "日本酒に合う", ""],
+    [True, "海鮮", "鯖", "Saba Mackerel", "Grilled saba w/ salt", 13,
+     "", "脂がのった鯖を塩焼きで", "1人前", "fish", "日本酒・焼酎に合う", ""],
+
+    # ========== RICE & NOODLES ==========
+    [True, "ご飯・麺", "焼きうどん", "Yaki Udon", "Pan-fried udon w/ beef, mushroom, green onion, fish broth, bonito, soy sauce & butter", 17.5,
+     "", "バター醤油の香ばしさ、鰹節たっぷり", "1人前（シェアも可）", "gluten, soy", "", ""],
+    [True, "ご飯・麺", "キムチうどん", "Kimchi Udon", "Marinated udon w/ spicy cod roe, kimchi, green onion, soy sauce & butter", 17,
+     "", "明太子とキムチのピリ辛、バターでコク", "1人前（シェアも可）", "gluten, soy", "", ""],
+    [True, "ご飯・麺", "キムチチャーハン", "Kimchi Fried Rice", "w/ kimchi, green onion, bacon & egg", 17,
+     "", "パラパラチャーハンにキムチの辛さ", "1人前", "egg", "", ""],
+    [True, "ご飯・麺", "お好み焼き", "Okonomi Yaki", "Deep-fried Japanese pancake w/ tonkatsu sauce, mustard mayo", 16,
+     "", "ふわふわの生地にソースとマヨ", "2人でシェアにちょうどいい", "gluten, egg", "ビールに合う", ""],
+    [True, "ご飯・麺", "モダン焼き", "Modern Yaki", "Deep-fried Japanese pancake & yakisoba noodles w/ tonkatsu sauce, mustard mayo & cheese", 20,
+     "", "お好み焼き+焼きそば+チーズの豪華版", "2-3人でシェア向き", "gluten, egg, dairy", "ビールに合う", ""],
+    [True, "ご飯・麺", "うなぎ丼", "BBQ Eel Rice", "BBQ eel & egg on rice", 19,
+     "", "甘辛いタレで焼いたうなぎ、卵のせ", "1人前", "fish, egg", "日本酒に合う", ""],
+    [True, "ご飯・麺", "ライス", "Rice", "Steamed white rice", 3,
+     "", "", "1人前", "", "", ""],
+
+    # ========== SWEET ==========
+    [True, "デザート", "柚子チーズケーキ", "Yuzu Cheese Cake w/ Green Tea Ice Cream", "Yuzu cheesecake with matcha ice cream", 8,
+     "", "柚子の爽やかさと抹茶アイスの組み合わせ", "1人前", "dairy, egg, gluten", "", ""],
+    [True, "デザート", "クリーム大福", "Cream Daifuku w/ Green Tea Ice Cream", "Mochi daifuku with matcha ice cream", 8,
+     "", "もちもち大福と抹茶アイス。フレーバーはスタッフに聞いてね！", "1人前", "dairy", "", ""],
+    [True, "デザート", "抹茶アイス", "Green Tea Ice Cream", "Matcha ice cream", 5,
+     "", "濃厚な抹茶の味わい", "1人前", "dairy", "", ""],
+
+    # ========== LUNCH TEISHOKU ==========
+    [True, "ランチ定食", "BBQビーフ定食", "BBQ Beef Tei", "BBQ beef, onion, mushroom, sweet spicy soy sauce. Comes w/ rice, miso soup & side dish", 17.5,
+     "", "甘辛い醤油ダレのBBQビーフ", "1人前セット", "soy", "", "Lunch only 11:30-14:00"],
+    [True, "ランチ定食", "鯖定食", "Saba Tei", "Grilled saba mackerel w/ salt. Comes w/ rice, miso soup & side dish", 15.5,
+     "", "脂がのった鯖の塩焼き定食", "1人前セット", "fish", "", "Lunch only 11:30-14:00"],
+    [True, "ランチ定食", "鮭定食", "Sake Tei", "Grilled Atlantic salmon w/ yuzu soy sauce. Comes w/ rice, miso soup & side dish", 16.5,
+     "", "柚子醤油で焼いたサーモン", "1人前セット", "fish, soy", "", "Lunch only 11:30-14:00"],
+    [True, "ランチ定食", "揚げ物定食", "Age Tei", "Chicken karaage, pork cutlet & creamy croquette. Comes w/ rice, miso soup & side dish", 16.5,
+     "", "唐揚げ・とんかつ・クリームコロッケの3種盛り", "1人前セット", "gluten, egg", "", "Lunch only 11:30-14:00"],
+    [True, "ランチ定食", "タタキ定食", "Tuna & Salmon Tataki Tei", "w/ green onion, garlic chips, ponzu sauce. Comes w/ rice, miso soup & side dish", 20,
+     "", "ツナ＆サーモンタタキの定食", "1人前セット", "fish", "", "Lunch only 11:30-14:00"],
+    [True, "ランチ定食", "刺身定食", "Sashi Tei", "Assorted sashimi (albacore tuna, Atlantic salmon, scallop & spot prawn). Comes w/ rice, miso soup & side dish", 24,
+     "", "4種の刺身盛り合わせ", "1人前セット", "fish, shellfish", "", "Lunch only 11:30-14:00"],
+
+    # ========== LUNCH YOSHOKU ==========
+    [True, "ランチ洋食", "カレー", "Curry", "Beef curry w/ rice. Comes w/ salad and side dish", 15,
+     "", "じっくり煮込んだビーフカレー", "1人前セット", "", "", "Lunch only 11:30-14:00"],
+    [True, "ランチ洋食", "カツカレー", "Katsu-Curry", "Pork cutlet & beef curry w/ rice. Comes w/ salad and side dish", 17.5,
+     "", "サクサクとんかつ＋ビーフカレー", "1人前セット", "gluten", "", "Lunch only 11:30-14:00"],
+    [True, "ランチ洋食", "ドリア", "Doria", "Rice gratin w/ cream sauce, corn, onion, chicken & cheese. Comes w/ salad and side dish", 15,
+     "", "アツアツクリームソースのライスグラタン", "1人前セット", "dairy, gluten", "", "Lunch only 11:30-14:00"],
+    [True, "ランチ洋食", "カレードリア", "Curry Doria", "Rice gratin w/ curry, cream sauce, corn, onion, chicken & cheese. Comes w/ salad and side dish", 15.5,
+     "", "カレー＋クリームソースのグラタン", "1人前セット", "dairy, gluten", "", "Lunch only 11:30-14:00"],
+
+    # ========== LUNCH DONBURI ==========
+    [True, "ランチ丼", "焼き鳥丼", "Yakitori Don", "Grilled teriyaki chicken & onion on rice. Comes w/ miso soup and side dish", 15,
+     "", "甘辛テリヤキチキンの丼", "1人前セット", "soy", "", "Lunch only 11:30-14:00"],
+    [True, "ランチ丼", "唐揚げ丼", "Karaage Don", "Chicken karaage on rice w/ fish broth. Comes w/ miso soup and side dish", 15,
+     "", "唐揚げを出汁で食べる丼", "1人前セット", "gluten", "", "Lunch only 11:30-14:00"],
+    [True, "ランチ丼", "たまごとじ丼", "Tamago Toji Don", "Chicken karaage, egg & onion on rice w/ fish broth. Comes w/ miso soup and side dish", 16,
+     "", "唐揚げを卵でとじた丼", "1人前セット", "gluten, egg", "", "Lunch only 11:30-14:00"],
+    [True, "ランチ丼", "カツ丼", "Katsu Don", "Pork cutlet, egg & onion on rice w/ fish broth. Comes w/ miso soup and side dish", 16,
+     "", "サクサクとんかつを卵でとじた丼", "1人前セット", "gluten, egg", "", "Lunch only 11:30-14:00"],
+
+    # ========== LUNCH IZAKAYA ==========
+    [True, "ランチ一品", "とんかつ", "Pork Cutlet", "Deep fried pork cutlet", 13,
+     "", "サクサクジューシーなとんかつ", "1人前", "gluten", "", "Lunch only 11:30-14:00"],
+    [True, "ランチ一品", "クリームコロッケ", "Creamy Croquette", "Cream chicken & corn croquette", 7,
+     "", "クリーミーなチキン＆コーンコロッケ", "1-2個", "dairy, gluten, egg", "", "Lunch only 11:30-14:00"],
+
+    # ========== BEER ==========
+    [True, "ビール", "サッポロ生", "Sapporo Draft", "16oz pint. Also: 5.5/10oz sleeve, 23/60oz pitcher", 8,
+     "", "", "", "", "", ""],
+    [True, "ビール", "アサヒ", "Asahi", "620ml bottle", 12.5,
+     "", "", "", "", "", ""],
+    [True, "ビール", "ハッピネスIPA", "Happyness IPA", "Superflux, 12oz", 8.5,
+     "", "", "", "", "", ""],
+    [True, "ビール", "フラッグシップ ヘイジーIPA", "Flagship Hazy IPA", "Steam Works, 355ml can", 6,
+     "", "", "", "", "", ""],
+    [True, "ビール", "マンゴービール", "Mango Beer", "16oz", 8,
+     "", "フルーティーで飲みやすい", "", "", "", ""],
+    [True, "ビール", "ライチビール", "Lychee Beer", "16oz", 8,
+     "", "甘くてフルーティー", "", "", "", ""],
+
+    # ========== HARD LIQUOR ==========
+    [True, "ハードリカー", "ジン ボンベイ", "Gin Bombay", "1oz (12/2oz). Mix with coke/diet coke/ginger ale +$0.5", 7.5,
+     "", "", "", "", "", ""],
+    [True, "ハードリカー", "テキーラ ホセ・クエルボ", "Tequila Jose Cuervo", "1oz (12/2oz). Mix with coke/diet coke/ginger ale +$0.5", 7.5,
+     "", "", "", "", "", ""],
+    [True, "ハードリカー", "ウイスキー クラウンロイヤル", "Whisky Crown Royal", "1oz (12/2oz). Mix with coke/diet coke/ginger ale +$0.5", 7.5,
+     "", "", "", "", "", ""],
+    [True, "ハードリカー", "ウイスキー ジェムソン", "Whisky Jameson", "1oz (12/2oz). Mix with coke/diet coke/ginger ale +$0.5", 7.5,
+     "", "", "", "", "", ""],
+
+    # ========== SHOCHU ==========
+    [True, "焼酎", "だんだん", "Dan-Dan Shochu", "Sweet potato shochu. 1oz (12/2oz, 95/720ml)", 7,
+     "", "芋焼酎。甘くてまろやか", "", "", "", ""],
+    [True, "焼酎", "たんたかたん", "Tan Taka Tan Shochu", "Shiso herb shochu. 1oz (12/2oz, 95/720ml)", 7,
+     "", "しそ焼酎。爽やかな香り", "", "", "", ""],
+    [True, "焼酎", "いいちこ", "Ichiko Shochu", "Barley shochu. 1oz (12/2oz, 80/900ml)", 7,
+     "", "麦焼酎。すっきり飲みやすい", "", "", "", ""],
+
+    # ========== SANGRIA ==========
+    [True, "サングリア", "オリジナル赤サングリア", "Original Red Sangria", "200ml (23/800ml pitcher)", 7.5,
+     "", "", "", "", "", ""],
+    [True, "サングリア", "シトラス白サングリア", "Citrus White Sangria", "200ml (23/800ml pitcher)", 7.5,
+     "", "", "", "", "", ""],
+
+    # ========== COCKTAIL ==========
+    [True, "カクテル", "ハイボール", "High Ball", "Whisky, pop (soda/coke/ginger ale). 2oz +$4", 8,
+     "", "", "", "", "", ""],
+    [True, "カクテル", "酒モヒート", "Sake Mojito", "Sake, plum wine, mint, ramune", 9,
+     "", "日本酒ベースのモヒート、ラムネのシュワシュワ感", "", "", "", ""],
+    [True, "カクテル", "ジン柚子ソーダ", "Gin Yuzu Soda", "Gin, yuzu, ginger ale", 9,
+     "", "柚子の爽やかさとジンの香り", "", "", "", ""],
+    [True, "カクテル", "ライチライチ", "Lychee Lychee", "Soho, vodka, lychee juice", 9,
+     "", "ライチたっぷり、甘くて飲みやすい", "", "", "", ""],
+    [True, "カクテル", "スノーホワイト", "Snow White", "Soho, calpico, lemon, ramune", 9,
+     "", "カルピス＋ラムネ、甘酸っぱい", "", "", "", ""],
+    [True, "カクテル", "レモンハイ", "Lemon Hi", "Vodka, lemon juice, soda", 8,
+     "", "すっきりレモン、定番の居酒屋ドリンク", "", "", "", ""],
+    [True, "カクテル", "ウーロンハイ", "Oolong Hi", "Vodka, oolong tea", 8,
+     "", "さっぱりウーロン茶割り", "", "", "", ""],
+
+    # ========== SOFT DRINK ==========
+    [True, "ソフトドリンク", "GUUUD! ラムネ", "GUUUD! Ramune", "Japanese ramune soda bottle", 4.5,
+     "", "日本のラムネソーダ、ビー玉で栓を開けるのが楽しい", "", "", "", ""],
+    [True, "ソフトドリンク", "スパークリングウォーター", "Sparkling Water", "Bottle", 3.5,
+     "", "", "", "", "", ""],
 ]
 
-# --- Config Data ---
-CONFIG_HEADER = ["key", "value"]
+# =====================================================================
+# Sheet 2: スペシャルメニュー
+# 担当シェフ名 | カテゴリ | メニュー名(日) | メニュー名(英) | メニュー説明(英)
+# | 値段 | 写真URL | 味・特徴 | 量感 | おすすめフラグ | 常駐フラグ | 備考
+# =====================================================================
+SPECIAL_HEADER = [
+    "担当シェフ名", "カテゴリ", "メニュー名(日)", "メニュー名(英)", "メニュー説明(英)",
+    "値段", "写真URL", "味・特徴", "量感", "おすすめフラグ", "常駐フラグ", "備考",
+]
 
-CONFIG = [
+SPECIAL_MENU = [
+    ["", "Happy Hour", "Van Go Funk! 純米酒", "Van Go Funk! Junmai Sake", "250ml", 23,
+     "", "フルーティーな純米酒", "", True, False,
+     "Happy Hour: everyday 11:30am-2pm & 9pm-close"],
+    ["", "Happy Hour", "刺身3種盛り シェフおまかせ", "3 Kinds of Sashimi Chef's Choice", "Chef's selection of 3 kinds of sashimi", 28,
+     "", "シェフが選ぶ本日の刺身3種", "2人でシェアにちょうどいい", True, False,
+     "February - May only. Happy Hour: everyday 11:30am-2pm & 9pm-close"],
+]
+
+# =====================================================================
+# Sheet 5: 店舗情報
+# 項目名 | 内容
+# =====================================================================
+STORE_HEADER = ["項目名", "内容"]
+
+STORE_INFO = [
+    ["店名", "Guu Original"],
+    ["住所", "838 Thurlow St, Vancouver, BC V6E 1W2, Canada"],
+    ["電話番号", "+1 604-685-8817"],
+    ["営業時間(ランチ)", "Mon-Fri 11:30am - 2:00pm"],
+    ["営業時間(ディナー)", "Mon-Sat 5:30pm - 11:00pm, Sun 5:30pm - 10:00pm"],
+    ["定休日", "ランチは土日休み"],
+    ["OpenTable URL", ""],
+    ["Instagram", ""],
+    ["Google Maps URL", ""],
     ["talk_theme", "人生最高の失敗談 / Your Greatest Failure Story"],
 ]
 
-# --- Write Menu Sheet ---
-print("Setting up Menu sheet...")
 
-# Rename sheet1 to "Menu" if needed
-try:
-    menu_sheet = spreadsheet.worksheet("Menu")
-except gspread.WorksheetNotFound:
-    # Rename the first sheet
-    sheet1 = spreadsheet.sheet1
-    sheet1.update_title("Menu")
-    menu_sheet = sheet1
+# =====================================================================
+# Write sheets
+# =====================================================================
 
-menu_sheet.clear()
-menu_sheet.append_row(MENU_HEADER)
-menu_sheet.append_rows(MENU)
-print(f"Menu sheet: {len(MENU)} items written.")
+def get_or_create_sheet(title: str, rows: int = 1000, cols: int = 12):
+    try:
+        return spreadsheet.worksheet(title)
+    except gspread.WorksheetNotFound:
+        return spreadsheet.add_worksheet(title, rows=rows, cols=cols)
 
-# --- Write Staff Sheet ---
-print("Setting up Staff sheet...")
 
-try:
-    staff_sheet = spreadsheet.worksheet("Staff")
-except gspread.WorksheetNotFound:
-    staff_sheet = spreadsheet.add_worksheet("Staff", rows=50, cols=4)
+def setup_checkboxes(sheet, col_letter: str, data_rows: int):
+    """Set checkbox data validation on a column (rows 2 to data_rows+1)."""
+    range_str = f"{col_letter}2:{col_letter}{data_rows + 1}"
+    body = {
+        "requests": [{
+            "setDataValidation": {
+                "range": {
+                    "sheetId": sheet.id,
+                    "startRowIndex": 1,
+                    "endRowIndex": data_rows + 1,
+                    "startColumnIndex": ord(col_letter) - ord("A"),
+                    "endColumnIndex": ord(col_letter) - ord("A") + 1,
+                },
+                "rule": {
+                    "condition": {"type": "BOOLEAN"},
+                    "showCustomUi": True,
+                },
+            }
+        }]
+    }
+    spreadsheet.batch_update(body)
 
-staff_sheet.clear()
-staff_sheet.append_row(STAFF_HEADER)
-staff_sheet.append_rows(STAFF)
-print(f"Staff sheet: {len(STAFF)} entries written.")
 
-# --- Write Config Sheet ---
-print("Setting up Config sheet...")
+# --- レギュラーメニュー ---
+print("Setting up レギュラーメニュー sheet...")
+regular_sheet = get_or_create_sheet("レギュラーメニュー", rows=1000, cols=12)
+regular_sheet.clear()
+regular_sheet.append_row(REGULAR_HEADER)
+regular_sheet.append_rows(REGULAR_MENU)
+# Set checkboxes on A (提供中)
+setup_checkboxes(regular_sheet, "A", len(REGULAR_MENU))
+print(f"  {len(REGULAR_MENU)} items written (with checkbox on A).")
 
-try:
-    config_sheet = spreadsheet.worksheet("Config")
-except gspread.WorksheetNotFound:
-    config_sheet = spreadsheet.add_worksheet("Config", rows=20, cols=2)
+# --- スペシャルメニュー ---
+print("Setting up スペシャルメニュー sheet...")
+special_sheet = get_or_create_sheet("スペシャルメニュー", rows=200, cols=12)
+special_sheet.clear()
+special_sheet.append_row(SPECIAL_HEADER)
+special_sheet.append_rows(SPECIAL_MENU)
+# Set checkboxes on J (おすすめフラグ) and K (常駐フラグ)
+setup_checkboxes(special_sheet, "J", len(SPECIAL_MENU))
+setup_checkboxes(special_sheet, "K", len(SPECIAL_MENU))
+print(f"  {len(SPECIAL_MENU)} items written (with checkboxes on J & K).")
 
-config_sheet.clear()
-config_sheet.append_row(CONFIG_HEADER)
-config_sheet.append_rows(CONFIG)
-print(f"Config sheet: {len(CONFIG)} entries written.")
+# --- 店舗情報 ---
+print("Setting up 店舗情報 sheet...")
+store_sheet = get_or_create_sheet("店舗情報", rows=50, cols=2)
+store_sheet.clear()
+store_sheet.append_row(STORE_HEADER)
+store_sheet.append_rows(STORE_INFO)
+print(f"  {len(STORE_INFO)} entries written.")
+
+# --- Delete old sheets (Menu, Config) if they exist ---
+for old_name in ["Menu", "Config"]:
+    try:
+        old_sheet = spreadsheet.worksheet(old_name)
+        print(f"Deleting old '{old_name}' sheet...")
+        spreadsheet.del_worksheet(old_sheet)
+    except gspread.WorksheetNotFound:
+        pass
 
 print(f"\nDone! https://docs.google.com/spreadsheets/d/{SHEET_ID}")

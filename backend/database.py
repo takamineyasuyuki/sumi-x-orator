@@ -1,17 +1,25 @@
 """
-SUMI X Orator - Menu & Staff Database
+SUMI X Orator - Menu & Staff Database (v2)
 Google Sheets with time-based caching for real-time admin sync.
 
-Menu schema: 提供中 | メニュー名 | カテゴリー | 担当シェフ | 魅力・特徴 | アレルギー・注意 | 価格
-Staff schema: 出勤 | 名前 | リスペクト要素 | トークタグ
-Config schema: key | value
+Sheets:
+  レギュラーメニュー: カテゴリ | メニュー名(日) | メニュー名(英) | メニュー説明(英) | 値段
+                     | 写真URL | 味・特徴 | 量感 | アレルギー情報 | おすすめ組み合わせ | 備考
+  スペシャルメニュー: 担当シェフ名 | カテゴリ | メニュー名(日) | メニュー名(英) | メニュー説明(英)
+                     | 値段 | 写真URL | 味・特徴 | 量感 | おすすめフラグ | 常駐フラグ | 備考
+  Staff: 出勤 | 名前 | リスペクト要素 | トークタグ
+  店舗情報: 項目名 | 内容
+  Ratings: timestamp | rating | message_count | lang
 """
+
+from __future__ import annotations
 
 import os
 import json
 import base64
 import time
 import logging
+from typing import Optional
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -36,12 +44,17 @@ class MenuDatabase:
         if not sheet_id:
             raise RuntimeError("GOOGLE_SHEET_ID is not set")
         self._spreadsheet = client.open_by_key(sheet_id)
-        self._menu_sheet = self._spreadsheet.worksheet("Menu")
+
+        self._regular_sheet = self._spreadsheet.worksheet("レギュラーメニュー")
+        self._special_sheet = self._get_or_create_sheet("スペシャルメニュー", cols=12)
         self._staff_sheet = self._get_or_create_sheet("Staff", cols=4)
-        self._config_sheet = self._get_or_create_sheet("Config", cols=2, header=["key", "value"])
+        self._store_sheet = self._get_or_create_sheet("店舗情報", cols=2,
+                                                       header=["項目名", "内容"])
         self._ratings_sheet = self._get_or_create_sheet("Ratings", cols=4,
                                                          header=["timestamp", "rating", "message_count", "lang"])
-        self._menu_items: list[dict] = []
+
+        self._regular_items: list[dict] = []
+        self._special_items: list[dict] = []
         self._staff: list[dict] = []
         self._last_fetch: float = 0
         self.refresh()
@@ -70,7 +83,6 @@ class MenuDatabase:
         )
 
     def _get_or_create_sheet(self, title: str, cols: int = 4, header: list[str] | None = None):
-        """Get or create a worksheet by title."""
         try:
             return self._spreadsheet.worksheet(title)
         except gspread.WorksheetNotFound:
@@ -84,7 +96,6 @@ class MenuDatabase:
     # Ratings
     # ------------------------------------------------------------------
     def save_rating(self, rating: int, message_count: int = 0, lang: str = ""):
-        """Save a customer rating (1-5) to the Ratings sheet."""
         from datetime import datetime
         from zoneinfo import ZoneInfo
         now = datetime.now(ZoneInfo("America/Vancouver")).strftime("%Y-%m-%d %H:%M:%S")
@@ -95,53 +106,82 @@ class MenuDatabase:
     # Cache management
     # ------------------------------------------------------------------
     def refresh(self):
-        """Fetch all rows from Menu and Staff sheets."""
-        self._menu_items = self._menu_sheet.get_all_records()
+        """Fetch all rows from menu and staff sheets."""
+        self._regular_items = self._regular_sheet.get_all_records()
+        try:
+            self._special_items = self._special_sheet.get_all_records()
+        except Exception:
+            logger.warning("Special menu sheet read failed, using empty list")
+            self._special_items = []
         try:
             self._staff = self._staff_sheet.get_all_records()
         except Exception:
             logger.warning("Staff sheet read failed, using empty list")
             self._staff = []
         self._last_fetch = time.time()
-        logger.info("Refreshed: %d menu items, %d staff", len(self._menu_items), len(self._staff))
+        logger.info("Refreshed: %d regular, %d special, %d staff",
+                     len(self._regular_items), len(self._special_items), len(self._staff))
 
     def refresh_if_stale(self):
-        """Refresh data if the cache TTL has expired."""
         if time.time() - self._last_fetch > CACHE_TTL:
             self.refresh()
 
     # ------------------------------------------------------------------
-    # Menu read operations
+    # Regular menu
     # ------------------------------------------------------------------
-    def get_all_items(self) -> list[dict]:
-        return self._menu_items
+    def get_regular_items(self) -> list[dict]:
+        return self._regular_items
 
-    def get_active_items(self) -> list[dict]:
+    def get_active_regular_items(self) -> list[dict]:
+        """Return only regular items with 提供中 = TRUE."""
         return [
-            item for item in self._menu_items
+            item for item in self._regular_items
             if str(item.get("提供中", "")).upper() == "TRUE"
         ]
 
-    def find_mentioned_items(self, text: str) -> list[dict]:
-        """Find active menu items whose names appear in the given text."""
-        text_lower = text.lower()
+    # ------------------------------------------------------------------
+    # Special menu
+    # ------------------------------------------------------------------
+    def get_special_items(self) -> list[dict]:
+        return self._special_items
+
+    def get_recommended_specials(self) -> list[dict]:
+        """Return special items with おすすめフラグ = TRUE."""
         return [
-            item for item in self.get_active_items()
-            if item.get("メニュー名", "") and item["メニュー名"].lower() in text_lower
+            item for item in self._special_items
+            if str(item.get("おすすめフラグ", "")).upper() == "TRUE"
         ]
 
     # ------------------------------------------------------------------
-    # Staff read operations
+    # Combined menu operations
+    # ------------------------------------------------------------------
+    def get_all_items(self) -> list[dict]:
+        return self._regular_items + self._special_items
+
+    def find_mentioned_items(self, text: str) -> list[dict]:
+        """Find menu items whose English names appear in the given text."""
+        text_lower = text.lower()
+        results = []
+        for item in self._regular_items:
+            name = item.get("メニュー名(英)", "")
+            if name and name.lower() in text_lower:
+                results.append(item)
+        for item in self._special_items:
+            name = item.get("メニュー名(英)", "")
+            if name and name.lower() in text_lower:
+                results.append(item)
+        return results
+
+    # ------------------------------------------------------------------
+    # Staff read operations (unchanged)
     # ------------------------------------------------------------------
     def get_working_staff(self) -> list[dict]:
-        """Return staff members currently on shift."""
         return [
             s for s in self._staff
             if str(s.get("出勤", "")).upper() == "TRUE"
         ]
 
     def get_staff_context(self) -> str:
-        """Build a text summary of working staff for the AI prompt, including talk tags."""
         working = self.get_working_staff()
         if not working:
             return "今日の出勤スタッフ情報はまだ登録されていません。"
@@ -160,97 +200,180 @@ class MenuDatabase:
         return "今日の出勤スタッフ:\n" + "\n".join(lines)
 
     # ------------------------------------------------------------------
-    # Config
+    # Store info
     # ------------------------------------------------------------------
-    def get_config(self, key: str, default: str = "") -> str:
-        """Read a value from the Config sheet by key."""
+    def get_store_info(self) -> dict[str, str]:
+        """Read all key-value pairs from 店舗情報 sheet."""
         try:
-            records = self._config_sheet.get_all_records()
-            for r in records:
-                if r.get("key") == key:
-                    return str(r.get("value", default))
+            records = self._store_sheet.get_all_records()
+            return {r.get("項目名", ""): str(r.get("内容", "")) for r in records if r.get("項目名")}
         except Exception:
-            logger.warning("Config read failed for key=%s", key)
-        return default
+            logger.warning("Store info read failed")
+            return {}
+
+    def get_store_info_context(self) -> str:
+        """Build text summary of store info for the AI prompt."""
+        info = self.get_store_info()
+        if not info:
+            return "店舗情報はまだ登録されていません。"
+        return "\n".join(f"- {k}: {v}" for k, v in info.items() if k != "talk_theme" and v)
+
+    def get_config(self, key: str, default: str = "") -> str:
+        """Read a value from 店舗情報 sheet by key."""
+        info = self.get_store_info()
+        return info.get(key, default)
 
     def get_talk_theme(self) -> str:
-        """Get the current weekly talk theme."""
         return self.get_config("talk_theme", "")
 
     # ------------------------------------------------------------------
-    # Lightweight availability (polling - columns A+B only)
+    # Availability (sold out tracking)
     # ------------------------------------------------------------------
     def get_availability(self) -> list[dict]:
-        """Fetch only 提供中 + メニュー名 columns for minimal payload polling."""
-        col_a = self._menu_sheet.col_values(1)  # 提供中
-        col_b = self._menu_sheet.col_values(2)  # メニュー名
-        # Skip header row, zip columns
+        """Return メニュー名(英) + 提供中 for all menu items."""
         result = []
-        for i in range(1, max(len(col_a), len(col_b))):
-            name = col_b[i] if i < len(col_b) else ""
-            active = col_a[i] if i < len(col_a) else ""
+        for item in self._regular_items:
+            name = item.get("メニュー名(英)", "")
             if name:
-                result.append({"メニュー名": name, "提供中": active.upper() == "TRUE"})
+                available = str(item.get("提供中", "")).upper() == "TRUE"
+                result.append({"メニュー名(英)": name, "提供中": available})
+        for item in self._special_items:
+            name = item.get("メニュー名(英)", "")
+            if name:
+                result.append({"メニュー名(英)": name, "提供中": True})
         return result
 
-    def toggle_availability(self, menu_name: str, available: bool):
-        """Set 提供中 (column A) for a specific menu item by name."""
-        col_b = self._menu_sheet.col_values(2)  # メニュー名
-        for i, name in enumerate(col_b):
+    def toggle_availability(self, menu_name: str, available: bool) -> bool:
+        """Toggle 提供中 (column A) for a regular menu item."""
+        header = self._regular_sheet.row_values(1)
+        try:
+            name_col_idx = header.index("メニュー名(英)") + 1
+            avail_col_idx = header.index("提供中") + 1
+        except ValueError:
+            logger.warning("Column not found for availability toggle")
+            return False
+        name_values = self._regular_sheet.col_values(name_col_idx)
+        for i, name in enumerate(name_values):
             if name == menu_name:
-                row_num = i + 1  # 1-indexed
-                self._menu_sheet.update_cell(row_num, 1, "TRUE" if available else "FALSE")
+                row_num = i + 1
+                self._regular_sheet.update_cell(row_num, avail_col_idx, available)
                 logger.info("Toggled %s -> %s", menu_name, available)
                 return True
         logger.warning("Menu item not found for toggle: %s", menu_name)
         return False
 
-    def get_all_items_for_staff(self) -> list[dict]:
-        """Get メニュー名 + カテゴリー + 提供中 for the staff admin UI."""
-        col_a = self._menu_sheet.col_values(1)  # 提供中
-        col_b = self._menu_sheet.col_values(2)  # メニュー名
-        col_c = self._menu_sheet.col_values(3)  # カテゴリー
-        result = []
-        for i in range(1, max(len(col_a), len(col_b), len(col_c))):
-            name = col_b[i] if i < len(col_b) else ""
-            active = col_a[i] if i < len(col_a) else ""
-            cat = col_c[i] if i < len(col_c) else ""
-            if name:
-                result.append({
-                    "メニュー名": name,
-                    "カテゴリー": cat,
-                    "提供中": active.upper() == "TRUE",
-                })
-        return result
+    # ------------------------------------------------------------------
+    # Special menu admin (staff UI)
+    # ------------------------------------------------------------------
+    def get_specials_for_staff(self) -> list[dict]:
+        """Get special menu items for staff admin UI."""
+        col_data = self._special_sheet.get_all_records()
+        results = []
+        for item in col_data:
+            results.append({
+                "担当シェフ名": item.get("担当シェフ名", ""),
+                "カテゴリ": item.get("カテゴリ", ""),
+                "メニュー名(英)": item.get("メニュー名(英)", ""),
+                "メニュー名(日)": item.get("メニュー名(日)", ""),
+                "値段": item.get("値段", ""),
+                "おすすめフラグ": str(item.get("おすすめフラグ", "")).upper() == "TRUE",
+                "常駐フラグ": str(item.get("常駐フラグ", "")).upper() == "TRUE",
+            })
+        return results
+
+    def get_regular_for_staff(self) -> list[dict]:
+        """Get regular menu items for staff admin UI with sold-out toggle."""
+        return [
+            {
+                "カテゴリ": item.get("カテゴリ", ""),
+                "メニュー名(英)": item.get("メニュー名(英)", ""),
+                "メニュー名(日)": item.get("メニュー名(日)", ""),
+                "値段": item.get("値段", ""),
+                "提供中": str(item.get("提供中", "")).upper() == "TRUE",
+            }
+            for item in self._regular_items
+        ]
+
+    def toggle_special_flag(self, menu_name: str, flag: str, value: bool) -> bool:
+        """Toggle おすすめフラグ or 常駐フラグ for a special menu item."""
+        header = self._special_sheet.row_values(1)
+        try:
+            name_col_idx = header.index("メニュー名(英)") + 1  # 1-indexed
+            flag_col_idx = header.index(flag) + 1
+        except ValueError:
+            logger.warning("Column not found: %s", flag)
+            return False
+
+        name_values = self._special_sheet.col_values(name_col_idx)
+        for i, name in enumerate(name_values):
+            if name == menu_name:
+                row_num = i + 1
+                self._special_sheet.update_cell(row_num, flag_col_idx, value)
+                logger.info("Toggled %s %s -> %s", menu_name, flag, value)
+                return True
+        logger.warning("Special menu item not found: %s", menu_name)
+        return False
 
     # ------------------------------------------------------------------
     # AI context builder
     # ------------------------------------------------------------------
     def get_menu_context(self) -> str:
         """Build a text summary for the AI system prompt."""
-        items = self.get_active_items()
-        if not items:
-            return "メニュー情報はまだ登録されていません。"
-
-        # Group by category
-        categories: dict[str, list[dict]] = {}
-        for item in items:
-            cat = item.get("カテゴリー", "その他")
-            categories.setdefault(cat, []).append(item)
-
         lines: list[str] = []
-        for cat, cat_items in categories.items():
-            lines.append(f"\n[{cat}]")
-            for item in cat_items:
-                parts = [f"- {item['メニュー名']}"]
-                if item.get("価格") and float(item["価格"]) > 0:
-                    parts.append(f"${item['価格']}")
-                if item.get("魅力・特徴"):
-                    parts.append(f"- {item['魅力・特徴']}")
-                if item.get("担当シェフ"):
-                    parts.append(f"[Chef: {item['担当シェフ']}]")
-                if item.get("アレルギー・注意"):
-                    parts.append(f"(Allergens: {item['アレルギー・注意']})")
+
+        # Regular menu (active items only)
+        regular = self.get_active_regular_items()
+        if regular:
+            categories: dict[str, list[dict]] = {}
+            for item in regular:
+                cat = item.get("カテゴリ", "その他")
+                categories.setdefault(cat, []).append(item)
+
+            lines.append("【レギュラーメニュー】")
+            for cat, cat_items in categories.items():
+                lines.append(f"\n[{cat}]")
+                for item in cat_items:
+                    parts = [f"- {item['メニュー名(英)']}"]
+                    if item.get("値段"):
+                        parts.append(f"${item['値段']}")
+                    if item.get("メニュー説明(英)"):
+                        parts.append(f"- {item['メニュー説明(英)']}")
+                    if item.get("味・特徴"):
+                        parts.append(f"({item['味・特徴']})")
+                    if item.get("量感"):
+                        parts.append(f"[{item['量感']}]")
+                    if item.get("アレルギー情報"):
+                        parts.append(f"(Allergens: {item['アレルギー情報']})")
+                    if item.get("おすすめ組み合わせ"):
+                        parts.append(f"Pairs well: {item['おすすめ組み合わせ']}")
+                    if item.get("備考"):
+                        parts.append(f"※{item['備考']}")
+                    lines.append(" ".join(parts))
+
+        # Special menu
+        specials = self._special_items
+        if specials:
+            lines.append("\n\n【スペシャルメニュー】")
+            for item in specials:
+                parts = [f"- {item.get('メニュー名(英)', '')}"]
+                if item.get("値段"):
+                    parts.append(f"${item['値段']}")
+                if item.get("メニュー説明(英)"):
+                    parts.append(f"- {item['メニュー説明(英)']}")
+                if item.get("担当シェフ名"):
+                    parts.append(f"[Chef: {item['担当シェフ名']}]")
+                if item.get("味・特徴"):
+                    parts.append(f"({item['味・特徴']})")
+                if item.get("量感"):
+                    parts.append(f"[{item['量感']}]")
+                recommended = str(item.get("おすすめフラグ", "")).upper() == "TRUE"
+                if recommended:
+                    parts.append("[RECOMMENDED]")
+                if item.get("備考"):
+                    parts.append(f"※{item['備考']}")
                 lines.append(" ".join(parts))
+
+        if not lines:
+            return "メニュー情報はまだ登録されていません。"
 
         return "\n".join(lines)

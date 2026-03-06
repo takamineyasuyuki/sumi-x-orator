@@ -47,6 +47,7 @@ async def lifespan(app: FastAPI):
         ai = AIHandler(
             menu_context=db.get_menu_context() if db else "",
             staff_context=db.get_staff_context() if db else "",
+            restaurant_info=db.get_store_info_context() if db else "",
         )
         logger.info("Gemini AI ready.")
     except Exception:
@@ -182,6 +183,12 @@ class TranslateRequest(BaseModel):
 
 class ToggleRequest(BaseModel):
     menu_name: str
+    flag: str  # "おすすめフラグ" or "常駐フラグ"
+    value: bool
+
+
+class SoldOutRequest(BaseModel):
+    menu_name: str
     available: bool
 
 
@@ -199,6 +206,7 @@ async def chat(request: Request, req: ChatRequest):
         db.refresh_if_stale()
         ai.update_menu_context(db.get_menu_context())
         ai.update_staff_context(db.get_staff_context())
+        ai.update_restaurant_info(db.get_store_info_context())
 
     # Build conversation history
     history = [{"role": msg.role, "content": msg.content} for msg in req.history]
@@ -276,12 +284,15 @@ async def get_menu():
     if not db:
         raise HTTPException(status_code=503, detail="Database not connected")
     db.refresh_if_stale()
-    return {"items": db.get_active_items()}
+    return {
+        "regular": db.get_regular_items(),
+        "special": db.get_special_items(),
+    }
 
 
 @app.get("/api/menu/availability")
 async def menu_availability():
-    """Lightweight polling endpoint: returns only メニュー名 + 提供中 (bool)."""
+    """Lightweight polling endpoint for sold-out display."""
     if not db:
         raise HTTPException(status_code=503, detail="Database not connected")
     return {"items": db.get_availability()}
@@ -289,16 +300,33 @@ async def menu_availability():
 
 @app.get("/api/menu/staff")
 async def menu_for_staff(_=Depends(verify_staff)):
-    """Staff admin: returns メニュー名 + カテゴリー + 提供中 for toggle UI."""
+    """Staff admin: returns regular (read-only) + special (with flags) for admin UI."""
     if not db:
         raise HTTPException(status_code=503, detail="Database not connected")
-    return {"items": db.get_all_items_for_staff()}
+    return {
+        "regular": db.get_regular_for_staff(),
+        "special": db.get_specials_for_staff(),
+    }
 
 
 @app.post("/api/menu/toggle")
 @limiter.limit("100/hour")
 async def toggle_menu_item(request: Request, req: ToggleRequest, _=Depends(verify_staff)):
-    """Staff admin: toggle 提供中 for a single menu item."""
+    """Staff admin: toggle おすすめフラグ or 常駐フラグ for a special menu item."""
+    if not db:
+        raise HTTPException(status_code=503, detail="Database not connected")
+    if req.flag not in ("おすすめフラグ", "常駐フラグ"):
+        raise HTTPException(status_code=400, detail="Invalid flag name")
+    ok = db.toggle_special_flag(req.menu_name, req.flag, req.value)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Menu item not found")
+    return {"status": "ok", "menu_name": req.menu_name, "flag": req.flag, "value": req.value}
+
+
+@app.post("/api/menu/soldout")
+@limiter.limit("100/hour")
+async def toggle_sold_out(request: Request, req: SoldOutRequest, _=Depends(verify_staff)):
+    """Staff admin: toggle 提供中 (sold out) for a regular menu item."""
     if not db:
         raise HTTPException(status_code=503, detail="Database not connected")
     ok = db.toggle_availability(req.menu_name, req.available)

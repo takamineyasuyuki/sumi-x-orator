@@ -116,16 +116,20 @@ const LANGUAGES = [
 // Types
 // ---------------------------------------------------------------------------
 interface MenuItem {
-  メニュー名: string;
-  カテゴリー?: string;
-  価格: number;
-  "魅力・特徴"?: string;
-  "アレルギー・注意"?: string;
-  担当シェフ?: string;
+  "メニュー名(英)": string;
+  "メニュー名(日)"?: string;
+  カテゴリ?: string;
+  値段: number;
+  "メニュー説明(英)"?: string;
+  "味・特徴"?: string;
+  量感?: string;
+  アレルギー情報?: string;
+  写真URL?: string;
+  担当シェフ名?: string;
 }
 
 interface AvailabilityItem {
-  メニュー名: string;
+  "メニュー名(英)": string;
   提供中: boolean;
 }
 
@@ -169,7 +173,7 @@ export default function Home() {
   const isItemAvailable = useCallback(
     (name: string) => {
       if (availability.length === 0) return true;
-      const found = availability.find((a) => a.メニュー名 === name);
+      const found = availability.find((a) => a["メニュー名(英)"] === name);
       return found ? found.提供中 : true;
     },
     [availability]
@@ -467,7 +471,7 @@ export default function Home() {
             {msg.menuItems && msg.menuItems.length > 0 && (
               <div className="menu-carousel flex gap-3 overflow-x-auto py-3 pl-12">
                 {msg.menuItems.map((item, i) => (
-                  <MenuCard key={i} item={item} soldOut={!isItemAvailable(item.メニュー名)} />
+                  <MenuCard key={i} item={item} soldOut={!isItemAvailable(item["メニュー名(英)"])} />
                 ))}
               </div>
             )}
