@@ -149,6 +149,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     menu_items: list[dict] = []
+    allergy_query: bool = False
 
 
 class TTSRequest(BaseModel):
@@ -184,6 +185,12 @@ class TranslateRequest(BaseModel):
 class ToggleRequest(BaseModel):
     menu_name: str
     flag: str  # "おすすめフラグ" or "常駐フラグ"
+    value: bool
+
+
+class RegularToggleRequest(BaseModel):
+    menu_name: str
+    flag: str  # "おすすめフラグ"
     value: bool
 
 
@@ -234,10 +241,15 @@ async def chat(request: Request, req: ChatRequest):
     # Generate response
     reply = ai.generate_response(lang_hint + energy_hint + req.message, history)
 
+    # Detect allergy-related query
+    allergy_keywords = {"allergy", "allergen", "vegan", "halal", "gluten", "ingredient",
+                        "アレルギー", "アレルゲン", "ビーガン", "ハラル", "グルテン", "成分"}
+    is_allergy = any(kw in req.message.lower() for kw in allergy_keywords)
+
     # Find menu items mentioned in the response
     menu_items = db.find_mentioned_items(reply) if db else []
 
-    return ChatResponse(reply=reply, menu_items=menu_items)
+    return ChatResponse(reply=reply, menu_items=menu_items, allergy_query=is_allergy)
 
 
 @app.post("/api/tts")
@@ -318,6 +330,20 @@ async def toggle_menu_item(request: Request, req: ToggleRequest, _=Depends(verif
     if req.flag not in ("おすすめフラグ", "常駐フラグ"):
         raise HTTPException(status_code=400, detail="Invalid flag name")
     ok = db.toggle_special_flag(req.menu_name, req.flag, req.value)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Menu item not found")
+    return {"status": "ok", "menu_name": req.menu_name, "flag": req.flag, "value": req.value}
+
+
+@app.post("/api/menu/regular/toggle")
+@limiter.limit("100/hour")
+async def toggle_regular_flag(request: Request, req: RegularToggleRequest, _=Depends(verify_staff)):
+    """Staff admin: toggle おすすめフラグ for a regular menu item."""
+    if not db:
+        raise HTTPException(status_code=503, detail="Database not connected")
+    if req.flag not in ("おすすめフラグ",):
+        raise HTTPException(status_code=400, detail="Invalid flag name")
+    ok = db.toggle_regular_flag(req.menu_name, req.flag, req.value)
     if not ok:
         raise HTTPException(status_code=404, detail="Menu item not found")
     return {"status": "ok", "menu_name": req.menu_name, "flag": req.flag, "value": req.value}

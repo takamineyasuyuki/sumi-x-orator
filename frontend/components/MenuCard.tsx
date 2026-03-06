@@ -11,10 +11,31 @@ interface MenuCardProps {
     担当シェフ名?: string;
   };
   soldOut?: boolean;
+  allergyOnly?: boolean;
 }
 
-export default function MenuCard({ item, soldOut }: MenuCardProps) {
+export default function MenuCard({ item, soldOut, allergyOnly }: MenuCardProps) {
   const photoUrl = item["写真URL"];
+
+  if (allergyOnly) {
+    return (
+      <div className="flex-shrink-0 w-56 rounded-xl overflow-hidden relative shadow-sm bg-[#FFF9F0] border border-[#C0392B]/30">
+        <div className="p-4 space-y-2">
+          <h3 className="text-sm font-medium text-[#3D2B1F]">{item["メニュー名(英)"]}</h3>
+          {item.アレルギー情報 ? (
+            <p className="text-xs text-[#C0392B]/80">
+              Allergens: {item.アレルギー情報}
+            </p>
+          ) : (
+            <p className="text-xs text-[#8B7355]">
+              Please ask staff for allergen info.
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex-shrink-0 w-56 rounded-xl overflow-hidden relative shadow-sm ${
       soldOut

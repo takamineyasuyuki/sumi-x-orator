@@ -244,20 +244,28 @@ class MenuDatabase:
         return result
 
     def toggle_availability(self, menu_name: str, available: bool) -> bool:
-        """Toggle 提供中 (column A) for a regular menu item."""
+        """Toggle 提供中 for a regular menu item."""
+        return self._toggle_regular_field(menu_name, "提供中", available)
+
+    def toggle_regular_flag(self, menu_name: str, flag: str, value: bool) -> bool:
+        """Toggle おすすめフラグ for a regular menu item."""
+        return self._toggle_regular_field(menu_name, flag, value)
+
+    def _toggle_regular_field(self, menu_name: str, field: str, value: bool) -> bool:
+        """Toggle a boolean field on the regular menu sheet."""
         header = self._regular_sheet.row_values(1)
         try:
             name_col_idx = header.index("メニュー名(英)") + 1
-            avail_col_idx = header.index("提供中") + 1
+            field_col_idx = header.index(field) + 1
         except ValueError:
-            logger.warning("Column not found for availability toggle")
+            logger.warning("Column not found: %s", field)
             return False
         name_values = self._regular_sheet.col_values(name_col_idx)
         for i, name in enumerate(name_values):
             if name == menu_name:
                 row_num = i + 1
-                self._regular_sheet.update_cell(row_num, avail_col_idx, available)
-                logger.info("Toggled %s -> %s", menu_name, available)
+                self._regular_sheet.update_cell(row_num, field_col_idx, value)
+                logger.info("Toggled %s %s -> %s", menu_name, field, value)
                 return True
         logger.warning("Menu item not found for toggle: %s", menu_name)
         return False
@@ -282,7 +290,7 @@ class MenuDatabase:
         return results
 
     def get_regular_for_staff(self) -> list[dict]:
-        """Get regular menu items for staff admin UI with sold-out toggle."""
+        """Get regular menu items for staff admin UI with sold-out and recommend toggles."""
         return [
             {
                 "カテゴリ": item.get("カテゴリ", ""),
@@ -290,6 +298,7 @@ class MenuDatabase:
                 "メニュー名(日)": item.get("メニュー名(日)", ""),
                 "値段": item.get("値段", ""),
                 "提供中": str(item.get("提供中", "")).upper() == "TRUE",
+                "おすすめフラグ": str(item.get("おすすめフラグ", "")).upper() == "TRUE",
             }
             for item in self._regular_items
         ]
@@ -348,6 +357,9 @@ class MenuDatabase:
                         parts.append(f"Pairs well: {item['おすすめ組み合わせ']}")
                     if item.get("備考"):
                         parts.append(f"※{item['備考']}")
+                    recommended = str(item.get("おすすめフラグ", "")).upper() == "TRUE"
+                    if recommended:
+                        parts.append("[RECOMMENDED]")
                     lines.append(" ".join(parts))
 
         # Special menu

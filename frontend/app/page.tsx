@@ -138,6 +138,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   menuItems?: MenuItem[];
+  allergyQuery?: boolean;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -310,6 +311,7 @@ export default function Home() {
           content: data.reply,
           menuItems:
             data.menu_items?.length > 0 ? data.menu_items : undefined,
+          allergyQuery: data.allergy_query || false,
         };
         setMessages((prev) => [...prev, aiMsg]);
         setBackendDown(false);
@@ -471,7 +473,7 @@ export default function Home() {
             {msg.menuItems && msg.menuItems.length > 0 && (
               <div className="menu-carousel flex gap-3 overflow-x-auto py-3 pl-12">
                 {msg.menuItems.map((item, i) => (
-                  <MenuCard key={i} item={item} soldOut={!isItemAvailable(item["メニュー名(英)"])} />
+                  <MenuCard key={i} item={item} soldOut={!isItemAvailable(item["メニュー名(英)"])} allergyOnly={msg.allergyQuery} />
                 ))}
               </div>
             )}

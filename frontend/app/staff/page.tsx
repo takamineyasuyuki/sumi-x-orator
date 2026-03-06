@@ -10,6 +10,7 @@ interface RegularItem {
   "メニュー名(日)": string;
   値段: number | string;
   提供中: boolean;
+  おすすめフラグ: boolean;
 }
 
 interface SpecialItem {
@@ -85,6 +86,36 @@ export default function StaffPage() {
     } catch {
       // Revert on failure
       setSpecial((prev) =>
+        prev.map((item) =>
+          item["メニュー名(英)"] === menuName
+            ? { ...item, [flag]: currentValue }
+            : item
+        )
+      );
+    } finally {
+      setToggling(null);
+    }
+  };
+
+  const toggleRegularFlag = async (menuName: string, flag: string, currentValue: boolean) => {
+    const key = `regular:${menuName}:${flag}`;
+    setToggling(key);
+    setRegular((prev) =>
+      prev.map((item) =>
+        item["メニュー名(英)"] === menuName
+          ? { ...item, [flag]: !currentValue }
+          : item
+      )
+    );
+    try {
+      const res = await fetch(`${API_URL}/api/menu/regular/toggle`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ menu_name: menuName, flag, value: !currentValue }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setRegular((prev) =>
         prev.map((item) =>
           item["メニュー名(英)"] === menuName
             ? { ...item, [flag]: currentValue }
@@ -295,31 +326,50 @@ export default function StaffPage() {
             <div className="space-y-1.5">
               {catItems.map((item) => {
                 const name = item["メニュー名(英)"];
-                const key = `soldout:${name}`;
+                const soldOutKey = `soldout:${name}`;
+                const recKey = `regular:${name}:おすすめフラグ`;
                 return (
                   <div
                     key={name}
-                    className="flex items-center justify-between px-4 py-3.5 bg-[#FFF9F0] rounded-xl border border-[#D4C4AE]"
+                    className="px-4 py-3.5 bg-[#FFF9F0] rounded-xl border border-[#D4C4AE] space-y-2"
                   >
-                    <span className={`text-sm font-medium ${
-                      item.提供中 ? "text-[#3D2B1F]" : "text-[#8B7355]/40 line-through"
-                    }`}>
-                      {name}
-                    </span>
-                    <button
-                      onClick={() => toggleSoldOut(name, item.提供中)}
-                      disabled={toggling === key}
-                      className={`relative w-16 h-9 rounded-full transition-colors duration-200 flex-shrink-0 ${
-                        item.提供中 ? "bg-[#B8D435]" : "bg-[#D4C4AE]"
-                      } ${toggling === key ? "opacity-50" : ""}`}
-                      aria-label={`${name}: ${item.提供中 ? "ON" : "SOLD OUT"}`}
-                    >
-                      <span
-                        className={`absolute top-1 w-7 h-7 bg-white rounded-full shadow transition-transform duration-200 ${
-                          item.提供中 ? "translate-x-8" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm font-medium ${
+                        item.提供中 ? "text-[#3D2B1F]" : "text-[#8B7355]/40 line-through"
+                      }`}>
+                        {name}
+                      </span>
+                      <button
+                        onClick={() => toggleSoldOut(name, item.提供中)}
+                        disabled={toggling === soldOutKey}
+                        className={`relative w-16 h-9 rounded-full transition-colors duration-200 flex-shrink-0 ${
+                          item.提供中 ? "bg-[#B8D435]" : "bg-[#D4C4AE]"
+                        } ${toggling === soldOutKey ? "opacity-50" : ""}`}
+                        aria-label={`${name}: ${item.提供中 ? "ON" : "SOLD OUT"}`}
+                      >
+                        <span
+                          className={`absolute top-1 w-7 h-7 bg-white rounded-full shadow transition-transform duration-200 ${
+                            item.提供中 ? "translate-x-8" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-2 text-xs text-[#8B7355]">
+                        <button
+                          onClick={() => toggleRegularFlag(name, "おすすめフラグ", item.おすすめフラグ)}
+                          disabled={toggling === recKey}
+                          className={`w-10 h-6 rounded-full transition-colors duration-200 relative ${
+                            item.おすすめフラグ ? "bg-[#B8D435]" : "bg-[#D4C4AE]"
+                          } ${toggling === recKey ? "opacity-50" : ""}`}
+                        >
+                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                            item.おすすめフラグ ? "translate-x-4" : "translate-x-0.5"
+                          }`} />
+                        </button>
+                        Recommend
+                      </label>
+                    </div>
                   </div>
                 );
               })}
