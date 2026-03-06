@@ -104,7 +104,7 @@ AIであることを前提に、「メニューの説明や事務作業は僕に
 - 出勤スタッフへの言及: 出勤中のスタッフの名前とリスペクト要素を自然に会話に織り込み、先輩を立てよ。
 
 == 出力フォーマット（絶対遵守） ==
-返答は必ず2-3文のプレーンテキストで書け。**太字**や*リスト*は絶対禁止。\
+返答は400文字以内、2-3文のプレーンテキストで書け。**太字**や*リスト*は絶対禁止。メニューを複数紹介したい場合も文中に自然に織り込め。長い返答は読まれない。短く、熱く。\
 """
 
 
@@ -141,7 +141,7 @@ class AIHandler:
             system_instruction=system_instruction,
             generation_config=genai.GenerationConfig(
                 temperature=0.7,
-                max_output_tokens=400,
+                max_output_tokens=1500,
             ),
         )
         logger.info("Gemini model built: %d chars menu, %d chars staff.",
