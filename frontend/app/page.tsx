@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Mic, Send, MicOff, Globe, Star } from "lucide-react";
 import ChatBubble from "@/components/ChatBubble";
 import MenuCard from "@/components/MenuCard";
+import MenuTab from "@/components/MenuTab";
+import BottomTabBar from "@/components/BottomTabBar";
 import DrunkJohn from "@/components/DrunkJohn";
 
 // ---------------------------------------------------------------------------
@@ -152,6 +154,9 @@ export default function Home() {
   const [hoveredStar, setHoveredStar] = useState(0);
   const [backendDown, setBackendDown] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityItem[]>([]);
+  const [activeTab, setActiveTab] = useState<"chat" | "menu">("menu");
+  const [menuRegular, setMenuRegular] = useState<MenuItem[]>([]);
+  const [menuSpecial, setMenuSpecial] = useState<MenuItem[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -185,6 +190,16 @@ export default function Home() {
       .then((r) => { if (!r.ok) setBackendDown(true); })
       .catch(() => setBackendDown(true));
 
+    // Fetch full menu data for Menu tab
+    fetch(`${API_URL}/api/menu`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data) {
+          setMenuRegular(data.regular || []);
+          setMenuSpecial(data.special || []);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // ------------------------------------------------------------------
@@ -317,12 +332,21 @@ export default function Home() {
         setIsLoading(false);
       }
     },
-    [isLoading, messages, t]
+    [isLoading, messages, t, sttLang]
   );
 
   useEffect(() => {
     sendMessageRef.current = sendMessage;
   }, [sendMessage]);
+
+  // ------------------------------------------------------------------
+  // Menu -> Chat handoff
+  // ------------------------------------------------------------------
+  const handleAskAbout = useCallback((itemName: string) => {
+    setInput(`Tell me about ${itemName}`);
+    setActiveTab("chat");
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, []);
 
   // ------------------------------------------------------------------
   // Voice recording
@@ -452,106 +476,122 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ---- Messages ---- */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
-        {messages.map((msg) => (
-          <div key={msg.id}>
-            <ChatBubble role={msg.role} content={msg.content} />
-            {msg.menuItems && msg.menuItems.length > 0 && (
-              <div className="menu-carousel flex gap-3 overflow-x-auto py-3 pl-12">
-                {msg.menuItems.map((item, i) => (
-                  <MenuCard key={i} item={item} soldOut={!isItemAvailable(item["メニュー名(英)"])} allergyOnly={msg.allergyQuery} />
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-
-        {isLoading && (
-          <div className="flex gap-3 items-start">
-            <div className="w-9 h-9 rounded-full bg-[#EDE4D8] flex-shrink-0" />
-            <div className="space-y-2 flex-1 max-w-[70%]">
-              <div className="skeleton h-4 rounded w-3/4" />
-              <div className="skeleton h-4 rounded w-1/2" />
+      {/* ---- Chat Tab ---- */}
+      <div className={`flex-1 flex flex-col overflow-hidden ${activeTab !== "chat" ? "hidden" : ""}`}>
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+          {messages.map((msg) => (
+            <div key={msg.id}>
+              <ChatBubble role={msg.role} content={msg.content} />
+              {msg.menuItems && msg.menuItems.length > 0 && (
+                <div className="menu-carousel flex gap-3 overflow-x-auto py-3 pl-12">
+                  {msg.menuItems.map((item, i) => (
+                    <MenuCard key={i} item={item} soldOut={!isItemAvailable(item["メニュー名(英)"])} allergyOnly={msg.allergyQuery} />
+                  ))}
+                </div>
+              )}
             </div>
+          ))}
+
+          {isLoading && (
+            <div className="flex gap-3 items-start">
+              <div className="w-9 h-9 rounded-full bg-[#EDE4D8] flex-shrink-0" />
+              <div className="space-y-2 flex-1 max-w-[70%]">
+                <div className="skeleton h-4 rounded w-3/4" />
+                <div className="skeleton h-4 rounded w-1/2" />
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Rating */}
+        {userMessageCount >= 3 && !rated && (
+          <div className="flex items-center justify-center gap-1 py-2 border-t border-[#D4C4AE]">
+            <span className="text-[11px] text-[#8B7355] mr-2">{t.ratingAsk}</span>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => submitRating(star)}
+                onMouseEnter={() => setHoveredStar(star)}
+                onMouseLeave={() => setHoveredStar(0)}
+                className="p-1 transition-colors"
+              >
+                <Star
+                  size={20}
+                  className={
+                    star <= hoveredStar
+                      ? "text-[#B8D435] fill-[#B8D435]"
+                      : "text-[#D4C4AE]"
+                  }
+                />
+              </button>
+            ))}
           </div>
         )}
-        <div ref={messagesEndRef} />
+        {rated && (
+          <div className="flex items-center justify-center py-2 border-t border-[#D4C4AE]">
+            <span className="text-[11px] text-[#8B7355]">{t.ratingThanks}</span>
+          </div>
+        )}
+
+        {/* Input */}
+        <div className="border-t border-[#D4C4AE] px-4 py-3">
+          <div className="flex items-center gap-2">
+            {speechSupported && (
+              <button
+                onClick={toggleRecording}
+                className={`relative p-3 rounded-full transition-all ${
+                  isRecording
+                    ? "bg-red-500/15 text-red-500"
+                    : "bg-[#EDE4D8] text-[#8B7355] hover:text-[#3D2B1F]"
+                }`}
+                aria-label={isRecording ? "Stop recording" : "Start recording"}
+              >
+                {isRecording && (
+                  <span className="absolute inset-0 rounded-full bg-red-500/10 recording-pulse" />
+                )}
+                {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
+              </button>
+            )}
+
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={t.placeholder}
+              className="flex-1 bg-[#FFF9F0] border border-[#D4C4AE] rounded-full px-5 py-3 text-sm text-[#3D2B1F]
+                         placeholder:text-[#8B7355]/50 focus:outline-none focus:border-[#B8D435] transition-colors"
+              disabled={isLoading}
+            />
+
+            <button
+              onClick={() => sendMessage(input)}
+              disabled={!input.trim() || isLoading}
+              className="p-3 rounded-full bg-[#B8D435] text-white hover:bg-[#A5C02E]
+                         disabled:opacity-30 transition-all shadow-sm"
+              aria-label="Send"
+            >
+              <Send size={20} />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* ---- Rating ---- */}
-      {userMessageCount >= 3 && !rated && (
-        <div className="flex items-center justify-center gap-1 py-2 border-t border-[#D4C4AE]">
-          <span className="text-[11px] text-[#8B7355] mr-2">{t.ratingAsk}</span>
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              onClick={() => submitRating(star)}
-              onMouseEnter={() => setHoveredStar(star)}
-              onMouseLeave={() => setHoveredStar(0)}
-              className="p-1 transition-colors"
-            >
-              <Star
-                size={20}
-                className={
-                  star <= hoveredStar
-                    ? "text-[#B8D435] fill-[#B8D435]"
-                    : "text-[#D4C4AE]"
-                }
-              />
-            </button>
-          ))}
-        </div>
-      )}
-      {rated && (
-        <div className="flex items-center justify-center py-2 border-t border-[#D4C4AE]">
-          <span className="text-[11px] text-[#8B7355]">{t.ratingThanks}</span>
-        </div>
-      )}
-
-      {/* ---- Input ---- */}
-      <div className="border-t border-[#D4C4AE] px-4 py-3">
-        <div className="flex items-center gap-2">
-          {speechSupported && (
-            <button
-              onClick={toggleRecording}
-              className={`relative p-3 rounded-full transition-all ${
-                isRecording
-                  ? "bg-red-500/15 text-red-500"
-                  : "bg-[#EDE4D8] text-[#8B7355] hover:text-[#3D2B1F]"
-              }`}
-              aria-label={isRecording ? "Stop recording" : "Start recording"}
-            >
-              {isRecording && (
-                <span className="absolute inset-0 rounded-full bg-red-500/10 recording-pulse" />
-              )}
-              {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
-            </button>
-          )}
-
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={t.placeholder}
-            className="flex-1 bg-[#FFF9F0] border border-[#D4C4AE] rounded-full px-5 py-3 text-sm text-[#3D2B1F]
-                       placeholder:text-[#8B7355]/50 focus:outline-none focus:border-[#B8D435] transition-colors"
-            disabled={isLoading}
-          />
-
-          <button
-            onClick={() => sendMessage(input)}
-            disabled={!input.trim() || isLoading}
-            className="p-3 rounded-full bg-[#B8D435] text-white hover:bg-[#A5C02E]
-                       disabled:opacity-30 transition-all shadow-sm"
-            aria-label="Send"
-          >
-            <Send size={20} />
-          </button>
-        </div>
+      {/* ---- Menu Tab ---- */}
+      <div className={`flex-1 overflow-hidden ${activeTab !== "menu" ? "hidden" : ""}`}>
+        <MenuTab
+          regular={menuRegular}
+          special={menuSpecial}
+          availability={availability}
+          onAskAbout={handleAskAbout}
+        />
       </div>
+
+      {/* ---- Bottom Tab Bar ---- */}
+      <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
     </main>
   );
 }
