@@ -94,7 +94,7 @@ export default function MenuTab({ regular, special, availability, onAskAbout }: 
   );
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+    <div className="h-full overflow-y-auto px-4 py-4 space-y-6">
       {/* Time indicator */}
       <div className="text-center">
         <span className="text-[10px] text-[#8B7355] bg-[#EDE4D8] rounded-full px-3 py-1 font-medium">
