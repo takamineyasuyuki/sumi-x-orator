@@ -351,6 +351,8 @@ class MenuDatabase:
                         parts.append(f"[{item['量感']}]")
                     if item.get("アレルギー情報"):
                         parts.append(f"(Allergens: {item['アレルギー情報']})")
+                    if item.get("成分情報"):
+                        parts.append(f"(Ingredients: {item['成分情報']})")
                     if item.get("おすすめ組み合わせ"):
                         parts.append(f"Pairs well: {item['おすすめ組み合わせ']}")
                     if item.get("備考"):

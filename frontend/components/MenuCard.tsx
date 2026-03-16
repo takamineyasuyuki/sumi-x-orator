@@ -73,11 +73,6 @@ export default function MenuCard({ item, soldOut, allergyOnly }: MenuCardProps) 
             {item["メニュー説明(英)"]}
           </p>
         )}
-        {item.アレルギー情報 && (
-          <p className="text-[10px] text-[#C0392B]/70">
-            Allergens: {item.アレルギー情報}
-          </p>
-        )}
       </div>
     </div>
   );
