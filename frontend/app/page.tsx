@@ -14,7 +14,6 @@ interface UIStrings {
   placeholder: string;
   ratingAsk: string;
   ratingThanks: string;
-  talkThemeLabel: string;
   rateLimitError: string;
   apiError: string;
   drunkTitle: string;
@@ -29,7 +28,6 @@ const I18N: Record<string, UIStrings> = {
     placeholder: "Ask me about the menu...",
     ratingAsk: "How was it?",
     ratingThanks: "Thank you!",
-    talkThemeLabel: "This Week's Talk Theme",
     rateLimitError: "Thanks for chatting! Please enjoy the rest with our amazing staff!",
     apiError: "Oops! John drank too much sake! Please call a human staff member!",
     drunkTitle: "Oops! John drank too much sake and is taking a nap!",
@@ -42,7 +40,6 @@ const I18N: Record<string, UIStrings> = {
     placeholder: "メニューについて聞いてね...",
     ratingAsk: "どうだった？",
     ratingThanks: "ありがとう！",
-    talkThemeLabel: "今週のトークテーマ",
     rateLimitError: "ご利用ありがとうございました。続きはお店でお楽しみください！",
     apiError: "ジョンが飲みすぎてダウン！スタッフを呼んでね！",
     drunkTitle: "ジョンが日本酒を飲みすぎて寝ちゃった！",
@@ -55,7 +52,6 @@ const I18N: Record<string, UIStrings> = {
     placeholder: "메뉴에 대해 물어보세요...",
     ratingAsk: "어떠셨어요?",
     ratingThanks: "감사합니다!",
-    talkThemeLabel: "이번 주 토크 테마",
     rateLimitError: "이용해 주셔서 감사합니다! 나머지는 스태프와 함께 즐겨주세요!",
     apiError: "이런! John이 술을 너무 많이 마셨어요! 스태프를 불러주세요!",
     drunkTitle: "이런! John이 사케를 너무 마시고 잠들었어요!",
@@ -68,7 +64,6 @@ const I18N: Record<string, UIStrings> = {
     placeholder: "问我关于菜单的问题...",
     ratingAsk: "感觉怎么样？",
     ratingThanks: "谢谢！",
-    talkThemeLabel: "本周聊天主题",
     rateLimitError: "感谢您的使用！请继续享受店内的美好时光！",
     apiError: "哎呀！John喝太多清酒了！请叫工作人员！",
     drunkTitle: "哎呀！John喝太多清酒睡着了！",
@@ -81,7 +76,6 @@ const I18N: Record<string, UIStrings> = {
     placeholder: "Preguntame sobre el menu...",
     ratingAsk: "Que tal estuvo?",
     ratingThanks: "Gracias!",
-    talkThemeLabel: "Tema de conversacion de la semana",
     rateLimitError: "Gracias por chatear! Disfruta el resto con nuestro increible equipo!",
     apiError: "Ups! John bebio demasiado sake! Llama a un miembro del equipo!",
     drunkTitle: "Ups! John bebio demasiado sake y se quedo dormido!",
@@ -94,7 +88,6 @@ const I18N: Record<string, UIStrings> = {
     placeholder: "Pergunte sobre o cardapio...",
     ratingAsk: "O que achou?",
     ratingThanks: "Obrigado!",
-    talkThemeLabel: "Tema da conversa da semana",
     rateLimitError: "Obrigado por conversar! Aproveite o resto com nossa equipe incrivel!",
     apiError: "Ops! John bebeu sake demais! Chame um membro da equipe!",
     drunkTitle: "Ops! John bebeu sake demais e caiu no sono!",
@@ -159,7 +152,6 @@ export default function Home() {
   const [hoveredStar, setHoveredStar] = useState(0);
   const [backendDown, setBackendDown] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityItem[]>([]);
-  const [talkTheme, setTalkTheme] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -193,11 +185,6 @@ export default function Home() {
       .then((r) => { if (!r.ok) setBackendDown(true); })
       .catch(() => setBackendDown(true));
 
-    // Fetch talk theme
-    fetch(`${API_URL}/api/config/talk-theme`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => { if (data?.theme) setTalkTheme(data.theme); })
-      .catch(() => {});
   }, []);
 
   // ------------------------------------------------------------------
@@ -491,19 +478,6 @@ export default function Home() {
         )}
         <div ref={messagesEndRef} />
       </div>
-
-      {/* ---- Talk Theme ---- */}
-      {talkTheme && (
-        <div className="px-4 py-2 border-t border-[#D4C4AE]">
-          <div className="bg-[#B8D435]/15 border border-[#B8D435]/30 rounded-xl px-4 py-2.5 flex items-center gap-2">
-            <span className="text-[#B8D435] text-base flex-shrink-0">&#128172;</span>
-            <div>
-              <p className="text-[9px] text-[#8B7355] uppercase tracking-wider font-medium">{t.talkThemeLabel}</p>
-              <p className="text-sm text-[#3D2B1F] font-medium">{talkTheme}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ---- Rating ---- */}
       {userMessageCount >= 3 && !rated && (

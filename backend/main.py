@@ -375,15 +375,6 @@ async def translate_messages(request: Request, req: TranslateRequest):
     return {"texts": translated}
 
 
-@app.get("/api/config/talk-theme")
-async def talk_theme():
-    """Get the current weekly talk theme from Config sheet."""
-    if not db:
-        raise HTTPException(status_code=503, detail="Database not connected")
-    theme = db.get_talk_theme()
-    return {"theme": theme}
-
-
 @app.get("/health")
 async def health():
     return {"status": "ok"}

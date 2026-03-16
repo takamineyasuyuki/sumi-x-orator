@@ -223,8 +223,6 @@ class MenuDatabase:
         info = self.get_store_info()
         return info.get(key, default)
 
-    def get_talk_theme(self) -> str:
-        return self.get_config("talk_theme", "")
 
     # ------------------------------------------------------------------
     # Availability (sold out tracking)
