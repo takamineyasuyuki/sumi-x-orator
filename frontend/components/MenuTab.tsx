@@ -149,7 +149,7 @@ export default function MenuTab({ regular, special, availability, onAskAbout }: 
   );
 
   const getCategoryLabel = (cat: string) => {
-    if (cat === "specials") return "Specials";
+    if (cat === "specials") return "Chef's Recommend";
     return CATEGORY_LABELS[cat] || cat;
   };
 
@@ -187,7 +187,7 @@ export default function MenuTab({ regular, special, availability, onAskAbout }: 
         {special.length > 0 && (
           <section ref={(el) => { sectionRefs.current["specials"] = el; }}>
             <h2 className="text-xs font-bold text-[#B8D435] uppercase tracking-wider mb-3 px-1">
-              Today&apos;s Specials
+              Chef&apos;s Recommend
             </h2>
             <div className="grid grid-cols-2 gap-3">
               {[...recommendedSpecials, ...otherSpecials].map((item) => (
