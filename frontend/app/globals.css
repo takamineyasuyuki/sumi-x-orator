@@ -59,3 +59,12 @@
 .menu-carousel::-webkit-scrollbar {
   display: none;
 }
+
+/* Hide scrollbar on category nav */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
