@@ -159,17 +159,26 @@ class MenuDatabase:
         return self._regular_items + self._special_items
 
     def find_mentioned_items(self, text: str) -> list[dict]:
-        """Find menu items whose English names appear in the given text."""
+        """Find menu items whose English names appear in the given text.
+        Matches longer names first to avoid substring false positives
+        (e.g. 'Daikon' matching inside 'Daikon Salad').
+        """
         text_lower = text.lower()
+        all_items = self._regular_items + self._special_items
+        # Sort by name length descending so longer names match first
+        candidates = sorted(
+            [(item, item.get("メニュー名(英)", "")) for item in all_items if item.get("メニュー名(英)")],
+            key=lambda x: len(x[1]),
+            reverse=True,
+        )
         results = []
-        for item in self._regular_items:
-            name = item.get("メニュー名(英)", "")
-            if name and name.lower() in text_lower:
+        remaining = text_lower
+        for item, name in candidates:
+            name_lower = name.lower()
+            if name_lower in remaining:
                 results.append(item)
-        for item in self._special_items:
-            name = item.get("メニュー名(英)", "")
-            if name and name.lower() in text_lower:
-                results.append(item)
+                # Remove matched name so shorter substrings don't false-match
+                remaining = remaining.replace(name_lower, "", 1)
         return results
 
     # ------------------------------------------------------------------
