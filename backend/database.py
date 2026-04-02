@@ -31,7 +31,7 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive",
 ]
 
-CACHE_TTL = int(os.getenv("MENU_CACHE_TTL", "300"))  # seconds
+CACHE_TTL = int(os.getenv("MENU_CACHE_TTL", "600"))  # seconds
 
 
 class MenuDatabase:
@@ -124,7 +124,11 @@ class MenuDatabase:
 
     def refresh_if_stale(self):
         if time.time() - self._last_fetch > CACHE_TTL:
-            self.refresh()
+            try:
+                self.refresh()
+            except Exception:
+                logger.warning("Refresh failed, serving stale cache")
+                self._last_fetch = time.time()  # retry after TTL
 
     # ------------------------------------------------------------------
     # Regular menu

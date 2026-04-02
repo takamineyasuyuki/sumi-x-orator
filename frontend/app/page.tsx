@@ -137,7 +137,7 @@ interface Message {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const POLL_INTERVAL = 20_000;
+const POLL_INTERVAL = 60_000;
 
 // ---------------------------------------------------------------------------
 // Component
@@ -190,13 +190,23 @@ export default function Home() {
       .then((r) => { if (!r.ok) setBackendDown(true); })
       .catch(() => setBackendDown(true));
 
-    // Fetch full menu data for Menu tab
+    // Load menu from cache first, then fetch fresh data
+    try {
+      const cached = localStorage.getItem("guu_menu");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setMenuRegular(parsed.regular || []);
+        setMenuSpecial(parsed.special || []);
+      }
+    } catch {}
+
     fetch(`${API_URL}/api/menu`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data) {
           setMenuRegular(data.regular || []);
           setMenuSpecial(data.special || []);
+          try { localStorage.setItem("guu_menu", JSON.stringify(data)); } catch {}
         }
       })
       .catch(() => {});
