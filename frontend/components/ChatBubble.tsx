@@ -11,15 +11,15 @@ export default function ChatBubble({ role, content }: ChatBubbleProps) {
       {!isUser && (
         <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-[#D4C4AE] bg-[#FFF9F0]">
           <img
-            src="/john.jpg"
-            alt="John"
+            src="/guu-taro.jpg"
+            alt="Guu-taro"
             className="w-full h-full object-cover"
             onError={(e) => {
-              // Fallback: show "J" if image not found
+              // Fallback: show "G" if image not found
               const target = e.currentTarget;
               target.style.display = "none";
               target.parentElement!.innerHTML =
-                '<span class="flex items-center justify-center w-full h-full text-xs font-bold text-[#B8D435]">J</span>';
+                '<span class="flex items-center justify-center w-full h-full text-xs font-bold text-[#B8D435]">G</span>';
             }}
           />
         </div>

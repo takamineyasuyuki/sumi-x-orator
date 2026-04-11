@@ -6,7 +6,7 @@ import ChatBubble from "@/components/ChatBubble";
 import MenuCard from "@/components/MenuCard";
 import MenuTab from "@/components/MenuTab";
 import BottomTabBar from "@/components/BottomTabBar";
-import DrunkJohn from "@/components/DrunkJohn";
+import DrunkGuutaro from "@/components/DrunkGuutaro";
 
 // ---------------------------------------------------------------------------
 // i18n
@@ -26,75 +26,75 @@ interface UIStrings {
 const I18N: Record<string, UIStrings> = {
   "en-US": {
     welcome:
-      "Hey! Welcome to Guu! I'm John, your digital concierge!\nI'll handle all the menu info - you just enjoy the vibes and the amazing crew here. What are you in the mood for?",
+      "Hey! Welcome to Guu! I'm Guu-taro, your digital concierge!\nI'll handle all the menu info - you just enjoy the vibes and the amazing crew here. What are you in the mood for?",
     placeholder: "Ask me about the menu...",
     ratingAsk: "How was it?",
     ratingThanks: "Thank you!",
     rateLimitError: "Thanks for chatting! Please enjoy the rest with our amazing staff!",
-    apiError: "Oops! John drank too much sake! Please call a human staff member!",
-    drunkTitle: "Oops! John drank too much sake and is taking a nap!",
+    apiError: "Oops! Guu-taro drank too much sake! Please call a human staff member!",
+    drunkTitle: "Oops! Guu-taro drank too much sake and is taking a nap!",
     drunkSubtitle: "Please call a human staff member!",
-    drunkHint: "(John is recovering... try again in a moment)",
+    drunkHint: "(Guu-taro is recovering... try again in a moment)",
   },
   "ja-JP": {
     welcome:
-      "いらっしゃい！Guuへようこそ！僕はジョン、デジタルコンシェルジュだよ！\nメニューのことは僕に任せて、君は最高のスタッフとの時間を楽しんで！何が気になる？",
+      "いらっしゃい！Guuへようこそ！僕はグー太郎、デジタルコンシェルジュだよ！\nメニューのことは僕に任せて、君は最高のスタッフとの時間を楽しんで！何が気になる？",
     placeholder: "メニューについて聞いてね...",
     ratingAsk: "どうだった？",
     ratingThanks: "ありがとう！",
     rateLimitError: "ご利用ありがとうございました。続きはお店でお楽しみください！",
-    apiError: "ジョンが飲みすぎてダウン！スタッフを呼んでね！",
-    drunkTitle: "ジョンが日本酒を飲みすぎて寝ちゃった！",
+    apiError: "グー太郎が飲みすぎてダウン！スタッフを呼んでね！",
+    drunkTitle: "グー太郎が日本酒を飲みすぎて寝ちゃった！",
     drunkSubtitle: "スタッフを呼んでください！",
-    drunkHint: "（ジョン回復中...少し待ってね）",
+    drunkHint: "（グー太郎回復中...少し待ってね）",
   },
   "ko-KR": {
     welcome:
-      "안녕하세요! Guu에 오신 걸 환영해요! 저는 John, 디지털 컨시어지예요!\n메뉴는 제가 안내할게요 - 멋진 스태프와 함께 즐거운 시간 보내세요! 뭐가 끌리세요?",
+      "안녕하세요! Guu에 오신 걸 환영해요! 저는 Guu-taro, 디지털 컨시어지예요!\n메뉴는 제가 안내할게요 - 멋진 스태프와 함께 즐거운 시간 보내세요! 뭐가 끌리세요?",
     placeholder: "메뉴에 대해 물어보세요...",
     ratingAsk: "어떠셨어요?",
     ratingThanks: "감사합니다!",
     rateLimitError: "이용해 주셔서 감사합니다! 나머지는 스태프와 함께 즐겨주세요!",
-    apiError: "이런! John이 술을 너무 많이 마셨어요! 스태프를 불러주세요!",
-    drunkTitle: "이런! John이 사케를 너무 마시고 잠들었어요!",
+    apiError: "이런! Guu-taro가 술을 너무 많이 마셨어요! 스태프를 불러주세요!",
+    drunkTitle: "이런! Guu-taro가 사케를 너무 마시고 잠들었어요!",
     drunkSubtitle: "스태프를 불러주세요!",
-    drunkHint: "(John 회복 중... 잠시만 기다려주세요)",
+    drunkHint: "(Guu-taro 회복 중... 잠시만 기다려주세요)",
   },
   "zh-CN": {
     welcome:
-      "嗨！欢迎来到Guu！我是John，您的数字礼宾！\n菜单的事交给我，您尽管享受这里的氛围和超棒的工作人员！想吃点什么？",
+      "嗨！欢迎来到Guu！我是Guu-taro，您的数字礼宾！\n菜单的事交给我，您尽管享受这里的氛围和超棒的工作人员！想吃点什么？",
     placeholder: "问我关于菜单的问题...",
     ratingAsk: "感觉怎么样？",
     ratingThanks: "谢谢！",
     rateLimitError: "感谢您的使用！请继续享受店内的美好时光！",
-    apiError: "哎呀！John喝太多清酒了！请叫工作人员！",
-    drunkTitle: "哎呀！John喝太多清酒睡着了！",
+    apiError: "哎呀！Guu-taro喝太多清酒了！请叫工作人员！",
+    drunkTitle: "哎呀！Guu-taro喝太多清酒睡着了！",
     drunkSubtitle: "请叫工作人员！",
-    drunkHint: "（John恢复中...请稍等）",
+    drunkHint: "（Guu-taro恢复中...请稍等）",
   },
   "es-ES": {
     welcome:
-      "Hola! Bienvenido a Guu! Soy John, tu concierge digital!\nYo me encargo del menu - tu disfruta del ambiente y del increible equipo. Que te apetece?",
+      "Hola! Bienvenido a Guu! Soy Guu-taro, tu concierge digital!\nYo me encargo del menu - tu disfruta del ambiente y del increible equipo. Que te apetece?",
     placeholder: "Preguntame sobre el menu...",
     ratingAsk: "Que tal estuvo?",
     ratingThanks: "Gracias!",
     rateLimitError: "Gracias por chatear! Disfruta el resto con nuestro increible equipo!",
-    apiError: "Ups! John bebio demasiado sake! Llama a un miembro del equipo!",
-    drunkTitle: "Ups! John bebio demasiado sake y se quedo dormido!",
+    apiError: "Ups! Guu-taro bebio demasiado sake! Llama a un miembro del equipo!",
+    drunkTitle: "Ups! Guu-taro bebio demasiado sake y se quedo dormido!",
     drunkSubtitle: "Por favor llama a un miembro del equipo!",
-    drunkHint: "(John se esta recuperando... intenta en un momento)",
+    drunkHint: "(Guu-taro se esta recuperando... intenta en un momento)",
   },
   "pt-BR": {
     welcome:
-      "Oi! Bem-vindo ao Guu! Eu sou o John, seu concierge digital!\nDeixa o cardapio comigo - voce so precisa curtir a vibe e a equipe incrivel daqui. O que te anima?",
+      "Oi! Bem-vindo ao Guu! Eu sou o Guu-taro, seu concierge digital!\nDeixa o cardapio comigo - voce so precisa curtir a vibe e a equipe incrivel daqui. O que te anima?",
     placeholder: "Pergunte sobre o cardapio...",
     ratingAsk: "O que achou?",
     ratingThanks: "Obrigado!",
     rateLimitError: "Obrigado por conversar! Aproveite o resto com nossa equipe incrivel!",
-    apiError: "Ops! John bebeu sake demais! Chame um membro da equipe!",
-    drunkTitle: "Ops! John bebeu sake demais e caiu no sono!",
+    apiError: "Ops! Guu-taro bebeu sake demais! Chame um membro da equipe!",
+    drunkTitle: "Ops! Guu-taro bebeu sake demais e caiu no sono!",
     drunkSubtitle: "Por favor chame um membro da equipe!",
-    drunkHint: "(John esta se recuperando... tente novamente em um momento)",
+    drunkHint: "(Guu-taro esta se recuperando... tente novamente em um momento)",
   },
 };
 
@@ -423,7 +423,7 @@ export default function Home() {
   };
 
   // ------------------------------------------------------------------
-  // Render: Drunk John
+  // Render: Drunk Guu-taro
   // ------------------------------------------------------------------
   if (backendDown && messages.length <= 1) {
     return (
@@ -434,7 +434,7 @@ export default function Home() {
             <p className="text-[10px] text-[#8B7355] tracking-[0.15em] uppercase">Orator</p>
           </div>
         </header>
-        <DrunkJohn title={t.drunkTitle} subtitle={t.drunkSubtitle} hint={t.drunkHint} />
+        <DrunkGuutaro title={t.drunkTitle} subtitle={t.drunkSubtitle} hint={t.drunkHint} />
       </main>
     );
   }
@@ -448,7 +448,7 @@ export default function Home() {
       <header className="flex items-center justify-between px-5 py-4 border-b border-[#D4C4AE]">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full overflow-hidden border border-[#D4C4AE]">
-            <img src="/john.jpg" alt="John" className="w-full h-full object-cover"
+            <img src="/guu-taro.jpg" alt="Guu-taro" className="w-full h-full object-cover"
               onError={(e) => { e.currentTarget.style.display = "none"; }} />
           </div>
           <div>

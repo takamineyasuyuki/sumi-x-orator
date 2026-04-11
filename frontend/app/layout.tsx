@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Guu Original - Orator",
-  description: "Meet John, your Guu hype man",
+  description: "Meet Guu-taro, your Guu digital concierge",
 };
 
 export const viewport: Viewport = {

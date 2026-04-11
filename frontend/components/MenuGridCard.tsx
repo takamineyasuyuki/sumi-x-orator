@@ -67,7 +67,7 @@ export default function MenuGridCard({ item, soldOut, recommended, onTap }: Menu
           {item.値段 > 0 && (
             <span className="text-xs text-[#3D2B1F] font-medium">${item.値段}</span>
           )}
-          <span className="text-[9px] text-[#B8D435] font-medium">Ask John →</span>
+          <span className="text-[9px] text-[#B8D435] font-medium">Ask Guu-taro →</span>
         </div>
       </div>
     </button>
