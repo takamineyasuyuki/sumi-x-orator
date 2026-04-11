@@ -105,13 +105,12 @@ export default function MenuTab({ regular, special, availability, onAskAbout }: 
     return sorted;
   }, [filteredRegular]);
 
-  // All category keys including specials
+  // All category keys (specials hidden for now)
   const allCategories = useMemo(() => {
     const cats: string[] = [];
-    if (special.length > 0) cats.push("specials");
     for (const [cat] of grouped) cats.push(cat);
     return cats;
-  }, [special, grouped]);
+  }, [grouped]);
 
   const scrollToCategory = useCallback((cat: string) => {
     setActiveCategory(cat);
@@ -182,28 +181,6 @@ export default function MenuTab({ regular, special, availability, onAskAbout }: 
             {isLunch ? "Lunch Menu" : "Dinner Menu"}
           </span>
         </div>
-
-        {/* Today's Specials */}
-        {special.length > 0 && (
-          <section ref={(el) => { sectionRefs.current["specials"] = el; }}>
-            <h2 className="text-xs font-bold text-[#B8D435] uppercase tracking-wider mb-3 px-1">
-              Chef&apos;s Recommend
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {[...recommendedSpecials, ...otherSpecials].map((item) => (
-                <MenuGridCard
-                  key={item["メニュー名(英)"]}
-                  item={item}
-                  soldOut={false}
-                  recommended={
-                    String(item.おすすめフラグ ?? "").toUpperCase() === "TRUE" || item.おすすめフラグ === true
-                  }
-                  onTap={() => onAskAbout(item["メニュー名(英)"])}
-                />
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* Regular menu by category */}
         {grouped.map(([category, items]) => (
