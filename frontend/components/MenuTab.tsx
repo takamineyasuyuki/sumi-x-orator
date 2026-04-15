@@ -28,8 +28,11 @@ interface MenuTabProps {
 }
 
 const CATEGORY_ORDER = [
+  // Dinner
   "おでん", "前菜", "サラダ", "汁物", "肉料理", "海鮮", "ご飯・麺", "デザート",
   "ビール", "ハードリカー", "焼酎", "サングリア", "カクテル", "ソフトドリンク",
+  // Lunch
+  "ランチ一品", "ランチ定食", "ランチ洋食", "ランチ丼",
 ];
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -47,10 +50,10 @@ const CATEGORY_LABELS: Record<string, string> = {
   "サングリア": "Sangria",
   "カクテル": "Cocktails",
   "ソフトドリンク": "Soft Drinks",
-  "ランチ定食": "Set Menu",
-  "ランチ洋食": "Western",
-  "ランチ丼": "Don",
-  "ランチ一品": "A La Carte",
+  "ランチ一品": "Izakaya Menu",
+  "ランチ定食": "Teishoku Combo",
+  "ランチ洋食": "Yoshoku Style Combo",
+  "ランチ丼": "Donburi",
 };
 
 function isLunchTimeNow(): boolean {
