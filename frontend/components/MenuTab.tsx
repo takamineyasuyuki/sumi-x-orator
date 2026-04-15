@@ -65,6 +65,7 @@ function isLunchTimeNow(): boolean {
 
 export default function MenuTab({ regular, special, availability, onAskAbout }: MenuTabProps) {
   const [isLunch, setIsLunch] = useState(isLunchTimeNow);
+  const [menuMode, setMenuMode] = useState<"lunch" | "dinner">(isLunchTimeNow() ? "lunch" : "dinner");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -80,14 +81,21 @@ export default function MenuTab({ regular, special, availability, onAskAbout }: 
     return found ? found.提供中 : true;
   };
 
-  // Filter regular items by time
+  // Filter regular items by selected menu mode
   const filteredRegular = useMemo(() => {
+    if (menuMode === "lunch") {
+      // Lunch: show only lunch-only items
+      return regular.filter((item) => {
+        const note = (item.備考 || "").toLowerCase();
+        return note.includes("lunch only");
+      });
+    }
+    // Dinner: exclude lunch-only items
     return regular.filter((item) => {
       const note = (item.備考 || "").toLowerCase();
-      if (note.includes("lunch only") && !isLunch) return false;
-      return true;
+      return !note.includes("lunch only");
     });
-  }, [regular, isLunch]);
+  }, [regular, menuMode]);
 
   // Group by category
   const grouped = useMemo(() => {
@@ -175,11 +183,28 @@ export default function MenuTab({ regular, special, availability, onAskAbout }: 
 
       {/* Menu content */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
-        {/* Time indicator */}
-        <div className="text-center">
-          <span className="text-[10px] text-[#8B7355] bg-[#EDE4D8] rounded-full px-3 py-1 font-medium">
-            {isLunch ? "Lunch Menu" : "Dinner Menu"}
-          </span>
+        {/* Lunch / Dinner toggle */}
+        <div className="flex justify-center gap-2">
+          <button
+            onClick={() => setMenuMode("lunch")}
+            className={`text-[11px] font-medium px-4 py-1.5 rounded-full transition-colors ${
+              menuMode === "lunch"
+                ? "bg-[#3D2B1F] text-[#F5EDE3]"
+                : "bg-[#EDE4D8] text-[#8B7355]"
+            }`}
+          >
+            Lunch
+          </button>
+          <button
+            onClick={() => setMenuMode("dinner")}
+            className={`text-[11px] font-medium px-4 py-1.5 rounded-full transition-colors ${
+              menuMode === "dinner"
+                ? "bg-[#3D2B1F] text-[#F5EDE3]"
+                : "bg-[#EDE4D8] text-[#8B7355]"
+            }`}
+          >
+            Dinner
+          </button>
         </div>
 
         {/* Regular menu by category */}
