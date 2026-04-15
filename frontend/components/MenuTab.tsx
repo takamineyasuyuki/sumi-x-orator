@@ -88,16 +88,17 @@ export default function MenuTab({ regular, special, availability, onAskAbout }: 
     return found ? found.提供中 : true;
   };
 
-  // Filter regular items by selected menu mode
+  const DRINK_CATEGORIES = new Set(["ビール", "ハードリカー", "焼酎", "サングリア", "カクテル", "ソフトドリンク"]);
+
+  // Filter regular items by selected menu mode (drinks always shown)
   const filteredRegular = useMemo(() => {
     if (menuMode === "lunch") {
-      // Lunch: show only lunch-only items
       return regular.filter((item) => {
         const note = (item.備考 || "").toLowerCase();
-        return note.includes("lunch only");
+        const cat = item.カテゴリ || "";
+        return note.includes("lunch only") || DRINK_CATEGORIES.has(cat);
       });
     }
-    // Dinner: exclude lunch-only items
     return regular.filter((item) => {
       const note = (item.備考 || "").toLowerCase();
       return !note.includes("lunch only");
