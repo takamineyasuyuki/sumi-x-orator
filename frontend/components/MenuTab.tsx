@@ -47,6 +47,10 @@ const CATEGORY_LABELS: Record<string, string> = {
   "サングリア": "Sangria",
   "カクテル": "Cocktails",
   "ソフトドリンク": "Soft Drinks",
+  "ランチ定食": "Set Menu",
+  "ランチ洋食": "Western",
+  "ランチ丼": "Don",
+  "ランチ一品": "A La Carte",
 };
 
 function isLunchTimeNow(): boolean {
