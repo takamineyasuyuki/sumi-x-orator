@@ -16,7 +16,11 @@ interface MenuGridCardProps {
   onTap?: () => void;
 }
 
+const DRINK_CATEGORIES = new Set(["ビール", "ハードリカー", "焼酎", "サングリア", "カクテル", "ソフトドリンク"]);
+
 export default function MenuGridCard({ item, soldOut, recommended, onTap }: MenuGridCardProps) {
+  const isDrink = DRINK_CATEGORIES.has(item.カテゴリ || "");
+
   return (
     <button
       onClick={onTap}
@@ -41,11 +45,11 @@ export default function MenuGridCard({ item, soldOut, recommended, onTap }: Menu
         </div>
       )}
       {item["写真URL"] ? (
-        <div className="w-full h-28 overflow-hidden">
+        <div className={`w-full h-28 overflow-hidden ${isDrink ? "bg-[#EDE4D8]" : ""}`}>
           <img
             src={item["写真URL"]}
             alt={item["メニュー名(英)"]}
-            className="w-full h-full object-cover"
+            className={`w-full h-full ${isDrink ? "object-contain p-2" : "object-cover"}`}
           />
         </div>
       ) : (
