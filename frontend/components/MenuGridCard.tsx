@@ -49,7 +49,7 @@ export default function MenuGridCard({ item, soldOut, recommended, onTap }: Menu
           <img
             src={item["写真URL"]}
             alt={item["メニュー名(英)"]}
-            className={`w-full h-full ${isDrink ? "object-contain p-2" : "object-cover"}`}
+            className={`w-full h-full ${isDrink ? "object-contain p-1" : "object-cover"}`}
           />
         </div>
       ) : (
