@@ -114,6 +114,12 @@ export default function MenuTab({ regular, special, availability, onAskAbout }: 
       map[cat].push(item);
     }
     const sorted = Object.entries(map).sort(([a], [b]) => {
+      // In lunch mode, push drink categories to the bottom
+      if (menuMode === "lunch") {
+        const aIsDrink = DRINK_CATEGORIES.has(a);
+        const bIsDrink = DRINK_CATEGORIES.has(b);
+        if (aIsDrink !== bIsDrink) return aIsDrink ? 1 : -1;
+      }
       const ai = CATEGORY_ORDER.indexOf(a);
       const bi = CATEGORY_ORDER.indexOf(b);
       return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
