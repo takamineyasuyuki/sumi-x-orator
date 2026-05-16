@@ -186,9 +186,19 @@ export default function Home() {
       (window as any).webkitSpeechRecognition;
     setSpeechSupported(!!SR);
 
-    fetch(`${API_URL}/health`)
-      .then((r) => { if (!r.ok) setBackendDown(true); })
-      .catch(() => setBackendDown(true));
+    // Health check with retry for cold starts (up to 3 attempts, 5s apart)
+    const checkHealth = async (attempt = 1): Promise<void> => {
+      try {
+        const r = await fetch(`${API_URL}/health`);
+        if (r.ok) { setBackendDown(false); return; }
+      } catch {}
+      if (attempt < 3) {
+        setTimeout(() => checkHealth(attempt + 1), 5000);
+      } else {
+        setBackendDown(true);
+      }
+    };
+    checkHealth();
 
     // Load menu from cache first, then fetch fresh data
     try {
