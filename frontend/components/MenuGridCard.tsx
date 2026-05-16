@@ -37,13 +37,6 @@ export default function MenuGridCard({ item, soldOut, recommended, onTap }: Menu
           </span>
         </div>
       )}
-      {recommended && !soldOut && (
-        <div className="absolute top-2 right-2 z-10">
-          <span className="bg-[#B8D435] text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
-            PICK
-          </span>
-        </div>
-      )}
       {item["写真URL"] ? (
         <div className={`w-full h-28 overflow-hidden ${isDrink ? "bg-[#EDE4D8]" : ""}`}>
           <img
