@@ -431,7 +431,7 @@ export default function Home() {
         <header className="flex items-center justify-center px-5 py-4 border-b border-[#D4C4AE]">
           <div className="text-center">
             <h1 className="text-lg font-bold tracking-[0.15em] text-[#3D2B1F]">Guu Original</h1>
-            <p className="text-[10px] text-[#8B7355] tracking-[0.15em] uppercase">Orator</p>
+            <p className="text-[10px] text-[#8B7355] tracking-[0.15em] uppercase">Guu-taro</p>
           </div>
         </header>
         <DrunkGuutaro title={t.drunkTitle} subtitle={t.drunkSubtitle} hint={t.drunkHint} />
@@ -453,7 +453,7 @@ export default function Home() {
           </div>
           <div>
             <h1 className="text-base font-bold tracking-[0.1em] text-[#3D2B1F]">Guu Original</h1>
-            <p className="text-[9px] text-[#8B7355] tracking-[0.15em] uppercase">Orator</p>
+            <p className="text-[9px] text-[#8B7355] tracking-[0.15em] uppercase">Guu-taro</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
