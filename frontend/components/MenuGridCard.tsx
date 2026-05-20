@@ -42,6 +42,8 @@ export default function MenuGridCard({ item, soldOut, recommended, onTap }: Menu
           <img
             src={item["写真URL"]}
             alt={item["メニュー名(英)"]}
+            loading="lazy"
+            decoding="async"
             className={`w-full h-full ${isDrink ? "object-contain p-1" : "object-cover"}`}
           />
         </div>
