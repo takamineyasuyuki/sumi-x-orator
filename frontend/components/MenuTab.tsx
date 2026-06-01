@@ -174,6 +174,15 @@ export default function MenuTab({ regular, special, availability, onAskAbout }: 
     return CATEGORY_LABELS[cat] || cat;
   };
 
+  if (filteredRegular.length === 0) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-4 px-8">
+        <div className="w-10 h-10 border-3 border-[#D4C4AE] border-t-[#B8D435] rounded-full animate-spin" />
+        <p className="text-sm text-[#8B7355]">Loading menu...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col">
       {/* Category navigation bar */}
