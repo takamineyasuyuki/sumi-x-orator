@@ -200,16 +200,25 @@ export default function Home() {
     };
     checkHealth();
 
-    // Load menu from cache first, then fetch fresh data
-    try {
-      const cached = localStorage.getItem("guu_menu");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        setMenuRegular(parsed.regular || []);
-        setMenuSpecial(parsed.special || []);
-      }
-    } catch {}
+    // Load menu: localStorage cache → static fallback → backend API
+    const cached = (() => { try { const c = localStorage.getItem("guu_menu"); return c ? JSON.parse(c) : null; } catch { return null; } })();
+    if (cached) {
+      setMenuRegular(cached.regular || []);
+      setMenuSpecial(cached.special || []);
+    } else {
+      // First-time visitor: load static cache from same origin (instant)
+      fetch("/menu-cache.json")
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data) {
+            setMenuRegular(data.regular || []);
+            setMenuSpecial(data.special || []);
+          }
+        })
+        .catch(() => {});
+    }
 
+    // Always fetch fresh data from backend in background
     fetch(`${API_URL}/api/menu`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
