@@ -152,6 +152,8 @@ export default function Home() {
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [rated, setRated] = useState(false);
   const [hoveredStar, setHoveredStar] = useState(0);
+  const [menuRated, setMenuRated] = useState(false);
+  const [menuHoveredStar, setMenuHoveredStar] = useState(0);
   const [backendDown, setBackendDown] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityItem[]>([]);
   const [activeTab, setActiveTab] = useState<"chat" | "menu">("menu");
@@ -432,6 +434,17 @@ export default function Home() {
     } catch {}
   };
 
+  const submitMenuRating = async (rating: number) => {
+    setMenuRated(true);
+    try {
+      await fetch(`${API_URL}/api/rating`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating, message_count: 0, lang: `menu_${sttLang}` }),
+      });
+    } catch {}
+  };
+
   const userMessageCount = messages.filter((m) => m.role === "user").length;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -616,6 +629,10 @@ export default function Home() {
           special={menuSpecial}
           availability={availability}
           onAskAbout={handleAskAbout}
+          menuRated={menuRated}
+          menuHoveredStar={menuHoveredStar}
+          onMenuRate={submitMenuRating}
+          onMenuHover={setMenuHoveredStar}
         />
       </div>
 

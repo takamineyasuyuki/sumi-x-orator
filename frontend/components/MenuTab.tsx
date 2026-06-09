@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { Star } from "lucide-react";
 import MenuGridCard from "./MenuGridCard";
 
 interface MenuItem {
@@ -25,6 +26,10 @@ interface MenuTabProps {
   special: MenuItem[];
   availability: AvailabilityItem[];
   onAskAbout: (itemName: string) => void;
+  menuRated?: boolean;
+  menuHoveredStar?: number;
+  onMenuRate?: (rating: number) => void;
+  onMenuHover?: (star: number) => void;
 }
 
 const CATEGORY_ORDER = [
@@ -70,7 +75,7 @@ function isLunchTimeNow(): boolean {
   return totalMinutes >= 690 && totalMinutes < 840; // 11:30 - 14:00
 }
 
-export default function MenuTab({ regular, special, availability, onAskAbout }: MenuTabProps) {
+export default function MenuTab({ regular, special, availability, onAskAbout, menuRated, menuHoveredStar = 0, onMenuRate, onMenuHover }: MenuTabProps) {
   const [isLunch, setIsLunch] = useState(isLunchTimeNow);
   const [menuMode, setMenuMode] = useState<"lunch" | "dinner">(isLunchTimeNow() ? "lunch" : "dinner");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -251,6 +256,39 @@ export default function MenuTab({ regular, special, availability, onAskAbout }: 
             </div>
           </section>
         ))}
+
+        {/* Menu Rating */}
+        {onMenuRate && (
+          <div className="flex flex-col items-center gap-2 pt-6 pb-4 opacity-50">
+            {!menuRated ? (
+              <>
+                <span className="text-[10px] text-[#8B7355]">Rate this photo menu</span>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => onMenuRate(star)}
+                      onMouseEnter={() => onMenuHover?.(star)}
+                      onMouseLeave={() => onMenuHover?.(0)}
+                      className="p-0.5 transition-colors"
+                    >
+                      <Star
+                        size={16}
+                        className={
+                          star <= menuHoveredStar
+                            ? "text-[#B8D435] fill-[#B8D435]"
+                            : "text-[#D4C4AE]"
+                        }
+                      />
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <span className="text-[10px] text-[#8B7355]">Thanks for your feedback!</span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
