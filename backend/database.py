@@ -241,13 +241,13 @@ class MenuDatabase:
     # Availability (sold out tracking)
     # ------------------------------------------------------------------
     def get_availability(self) -> list[dict]:
-        """Return メニュー名(英) + 提供中 for all menu items."""
+        """Return メニュー名(英) + 提供中 for active menu items only."""
         result = []
         for item in self._regular_items:
             name = item.get("メニュー名(英)", "")
-            if name:
-                available = str(item.get("提供中", "")).upper() == "TRUE"
-                result.append({"メニュー名(英)": name, "提供中": available})
+            provided = str(item.get("提供中", "")).upper()
+            if name and provided != "FALSE":
+                result.append({"メニュー名(英)": name, "提供中": provided == "TRUE"})
         for item in self._special_items:
             name = item.get("メニュー名(英)", "")
             if name:

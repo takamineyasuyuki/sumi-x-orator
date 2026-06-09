@@ -297,7 +297,7 @@ async def get_menu():
         raise HTTPException(status_code=503, detail="Database not connected")
     db.refresh_if_stale()
     return {
-        "regular": db.get_regular_items(),
+        "regular": db.get_active_regular_items(),
         "special": db.get_special_items(),
     }
 
