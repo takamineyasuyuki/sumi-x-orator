@@ -79,6 +79,7 @@ export default function MenuTab({ regular, special, availability, onAskAbout, me
   const [isLunch, setIsLunch] = useState(isLunchTimeNow);
   const [menuMode, setMenuMode] = useState<"lunch" | "dinner">(isLunchTimeNow() ? "lunch" : "dinner");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [ratingDismissed, setRatingDismissed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -256,40 +257,49 @@ export default function MenuTab({ regular, special, availability, onAskAbout, me
             </div>
           </section>
         ))}
+      </div>
 
-        {/* Menu Rating */}
-        {onMenuRate && (
-          <div className="flex flex-col items-center gap-2 pt-6 pb-4 opacity-50">
+      {/* Menu Rating - fixed bottom bar */}
+      {onMenuRate && !ratingDismissed && (
+        <div className="flex-shrink-0 border-t border-[#D4C4AE] bg-[#F5EDE3]/90 backdrop-blur-sm">
+          <div className="flex items-center justify-center gap-1 py-2 px-4 opacity-60">
             {!menuRated ? (
               <>
-                <span className="text-[10px] text-[#8B7355]">Rate this photo menu</span>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      onClick={() => onMenuRate(star)}
-                      onMouseEnter={() => onMenuHover?.(star)}
-                      onMouseLeave={() => onMenuHover?.(0)}
-                      className="p-0.5 transition-colors"
-                    >
-                      <Star
-                        size={16}
-                        className={
-                          star <= menuHoveredStar
-                            ? "text-[#B8D435] fill-[#B8D435]"
-                            : "text-[#D4C4AE]"
-                        }
-                      />
-                    </button>
-                  ))}
-                </div>
+                <span className="text-[10px] text-[#8B7355] mr-1.5">Rate this photo menu</span>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => onMenuRate(star)}
+                    onMouseEnter={() => onMenuHover?.(star)}
+                    onMouseLeave={() => onMenuHover?.(0)}
+                    className="p-0.5 transition-colors"
+                  >
+                    <Star
+                      size={16}
+                      className={
+                        star <= menuHoveredStar
+                          ? "text-[#B8D435] fill-[#B8D435]"
+                          : "text-[#D4C4AE]"
+                      }
+                    />
+                  </button>
+                ))}
+                <button
+                  onClick={() => setRatingDismissed(true)}
+                  className="ml-2 text-[#8B7355] hover:text-[#3D2B1F] transition-colors"
+                  aria-label="Close"
+                >
+                  <span className="text-xs leading-none">&times;</span>
+                </button>
               </>
             ) : (
-              <span className="text-[10px] text-[#8B7355]">Thanks for your feedback!</span>
+              <span className="text-[10px] text-[#8B7355]" ref={(el) => {
+                if (el) setTimeout(() => setRatingDismissed(true), 2000);
+              }}>Thanks for your feedback!</span>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
