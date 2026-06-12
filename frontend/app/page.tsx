@@ -139,6 +139,29 @@ interface Message {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const POLL_INTERVAL = 60_000;
 
+function getSessionId(): string {
+  try {
+    let id = sessionStorage.getItem("guu_session");
+    if (!id) {
+      id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      sessionStorage.setItem("guu_session", id);
+    }
+    return id;
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+}
+
+function trackEvent(event: string, data = "", lang = "") {
+  try {
+    fetch(`${API_URL}/api/analytics`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: getSessionId(), event, data, lang }),
+    }).catch(() => {});
+  } catch {}
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -187,6 +210,9 @@ export default function Home() {
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
     setSpeechSupported(!!SR);
+
+    // Track page view
+    trackEvent("page_view", "init", sttLang);
 
     // Health check with retry for cold starts (up to 3 attempts, 5s apart)
     const checkHealth = async (attempt = 1): Promise<void> => {
@@ -311,6 +337,7 @@ export default function Home() {
       setMessages((prev) => [...prev, userMsg]);
       setInput("");
       setIsLoading(true);
+      trackEvent("chat_message", text.trim().slice(0, 100), sttLang);
 
       try {
         const history = messages
@@ -374,10 +401,11 @@ export default function Home() {
   // Menu -> Chat handoff
   // ------------------------------------------------------------------
   const handleAskAbout = useCallback((itemName: string) => {
+    trackEvent("menu_tap", itemName, sttLang);
     setInput(`Tell me about ${itemName}`);
     setActiveTab("chat");
     setTimeout(() => inputRef.current?.focus(), 100);
-  }, []);
+  }, [sttLang]);
 
   // ------------------------------------------------------------------
   // Voice recording
@@ -637,7 +665,10 @@ export default function Home() {
       </div>
 
       {/* ---- Bottom Tab Bar ---- */}
-      <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomTabBar activeTab={activeTab} onTabChange={(tab) => {
+        setActiveTab(tab);
+        trackEvent("page_view", tab, sttLang);
+      }} />
     </main>
   );
 }

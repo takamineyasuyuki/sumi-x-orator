@@ -199,6 +199,13 @@ class SoldOutRequest(BaseModel):
     available: bool
 
 
+class AnalyticsRequest(BaseModel):
+    session_id: str
+    event: str  # page_view, chat_message, menu_tap
+    data: str = ""
+    lang: str = ""
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -373,6 +380,18 @@ async def translate_messages(request: Request, req: TranslateRequest):
     lang_name = lang_map.get(req.lang, "English")
     translated = ai.translate_messages(req.texts, lang_name)
     return {"texts": translated}
+
+
+@app.post("/api/analytics")
+@limiter.limit("200/hour")
+async def track_analytics(request: Request, req: AnalyticsRequest):
+    if not db:
+        raise HTTPException(status_code=503, detail="Database not connected")
+    if req.event not in ("page_view", "chat_message", "menu_tap"):
+        raise HTTPException(status_code=400, detail="Invalid event type")
+    ua = request.headers.get("user-agent", "")[:200]
+    db.save_analytics(req.session_id, req.event, req.data, req.lang, ua)
+    return {"status": "ok"}
 
 
 @app.get("/health")

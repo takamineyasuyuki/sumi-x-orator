@@ -52,6 +52,8 @@ class MenuDatabase:
                                                        header=["項目名", "内容"])
         self._ratings_sheet = self._get_or_create_sheet("Ratings", cols=4,
                                                          header=["timestamp", "rating", "message_count", "lang"])
+        self._analytics_sheet = self._get_or_create_sheet("Analytics", cols=6,
+                                                          header=["timestamp", "session_id", "event", "data", "lang", "user_agent"])
 
         self._regular_items: list[dict] = []
         self._special_items: list[dict] = []
@@ -101,6 +103,14 @@ class MenuDatabase:
         now = datetime.now(ZoneInfo("America/Vancouver")).strftime("%Y-%m-%d %H:%M:%S")
         self._ratings_sheet.append_row([now, rating, message_count, lang])
         logger.info("Rating saved: %d stars", rating)
+
+    def save_analytics(self, session_id: str, event: str, data: str = "",
+                       lang: str = "", user_agent: str = ""):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        now = datetime.now(ZoneInfo("America/Vancouver")).strftime("%Y-%m-%d %H:%M:%S")
+        self._analytics_sheet.append_row([now, session_id, event, data, lang, user_agent])
+        logger.info("Analytics: %s %s", event, data[:50] if data else "")
 
     # ------------------------------------------------------------------
     # Cache management

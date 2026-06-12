@@ -80,6 +80,7 @@ export default function MenuTab({ regular, special, availability, onAskAbout, me
   const [menuMode, setMenuMode] = useState<"lunch" | "dinner">(isLunchTimeNow() ? "lunch" : "dinner");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [ratingDismissed, setRatingDismissed] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -163,6 +164,7 @@ export default function MenuTab({ regular, special, availability, onAskAbout, me
         }
       }
       if (current !== activeCategory) setActiveCategory(current);
+      if (!hasScrolled && container.scrollTop > 200) setHasScrolled(true);
     };
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
@@ -259,13 +261,13 @@ export default function MenuTab({ regular, special, availability, onAskAbout, me
         ))}
       </div>
 
-      {/* Menu Rating - fixed bottom bar */}
-      {onMenuRate && !ratingDismissed && (
-        <div className="flex-shrink-0 border-t border-[#D4C4AE] bg-[#F5EDE3]/90 backdrop-blur-sm">
-          <div className="flex items-center justify-center gap-1 py-2 px-4 opacity-60">
+      {/* Menu Rating - fixed bottom bar, appears after scrolling */}
+      {onMenuRate && !ratingDismissed && hasScrolled && (
+        <div className="flex-shrink-0 border-t border-[#D4C4AE] bg-[#F5EDE3]/90 backdrop-blur-sm animate-fadeIn">
+          <div className="flex items-center justify-center gap-1 py-2 px-4 opacity-70">
             {!menuRated ? (
               <>
-                <span className="text-[10px] text-[#8B7355] mr-1.5">Rate this photo menu</span>
+                <span className="text-[10px] text-[#8B7355] mr-1.5">Help Guu-taro! Rate this menu</span>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
