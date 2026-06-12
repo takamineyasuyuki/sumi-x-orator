@@ -268,7 +268,7 @@ export default function MenuTab({ regular, special, availability, onAskAbout, me
             {!menuRated ? (
               <>
                 <img src="/guu-taro.jpg" alt="" className="w-5 h-5 rounded-full object-cover" />
-                <span className="text-[11px] text-[#F5EDE3] font-medium">Help Guu-taro!</span>
+                <span className="text-[11px] text-[#F5EDE3] font-medium">How's the photo menu?</span>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
