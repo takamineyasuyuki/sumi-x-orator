@@ -263,41 +263,42 @@ export default function MenuTab({ regular, special, availability, onAskAbout, me
 
       {/* Menu Rating - fixed bottom bar, appears after scrolling */}
       {onMenuRate && !ratingDismissed && hasScrolled && (
-        <div className="flex-shrink-0 border-t border-[#D4C4AE] bg-[#F5EDE3]/90 backdrop-blur-sm animate-fadeIn">
-          <div className="flex items-center justify-center gap-1 py-2 px-4 opacity-70">
+        <div className="flex-shrink-0 bg-[#3D2B1F] animate-fadeIn">
+          <div className="flex items-center justify-center gap-2 py-2.5 px-4">
             {!menuRated ? (
               <>
-                <span className="text-[10px] text-[#8B7355] mr-1.5">Help Guu-taro! Rate this menu</span>
+                <img src="/guu-taro.jpg" alt="" className="w-5 h-5 rounded-full object-cover" />
+                <span className="text-[11px] text-[#F5EDE3] font-medium">Help Guu-taro!</span>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     onClick={() => onMenuRate(star)}
                     onMouseEnter={() => onMenuHover?.(star)}
                     onMouseLeave={() => onMenuHover?.(0)}
-                    className="p-0.5 transition-colors"
+                    className="p-0.5 transition-transform active:scale-125"
                   >
                     <Star
-                      size={16}
+                      size={20}
                       className={
                         star <= menuHoveredStar
                           ? "text-[#B8D435] fill-[#B8D435]"
-                          : "text-[#D4C4AE]"
+                          : "text-[#8B7355]"
                       }
                     />
                   </button>
                 ))}
                 <button
                   onClick={() => setRatingDismissed(true)}
-                  className="ml-2 text-[#8B7355] hover:text-[#3D2B1F] transition-colors"
+                  className="ml-1 text-[#8B7355] hover:text-[#F5EDE3] transition-colors"
                   aria-label="Close"
                 >
-                  <span className="text-xs leading-none">&times;</span>
+                  <span className="text-sm leading-none">&times;</span>
                 </button>
               </>
             ) : (
-              <span className="text-[10px] text-[#8B7355]" ref={(el) => {
+              <span className="text-[11px] text-[#B8D435] font-medium" ref={(el) => {
                 if (el) setTimeout(() => setRatingDismissed(true), 2000);
-              }}>Thanks for your feedback!</span>
+              }}>Kanpai! Thanks! 🍶</span>
             )}
           </div>
         </div>
