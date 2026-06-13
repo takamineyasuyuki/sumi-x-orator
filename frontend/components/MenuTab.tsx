@@ -261,35 +261,28 @@ export default function MenuTab({ regular, special, availability, onAskAbout, me
         ))}
       </div>
 
-      {/* Menu Rating - fixed bottom bar, appears after scrolling */}
-      {onMenuRate && !ratingDismissed && hasScrolled && (
-        <div className="flex-shrink-0 bg-[#3D2B1F] animate-fadeIn">
-          <div className="flex items-center justify-center gap-2 py-2.5 px-4">
+      {/* Menu Rating - fixed bottom bar */}
+      {onMenuRate && !ratingDismissed && (
+        <div className="flex-shrink-0 bg-[#3D2B1F]">
+          <div className="flex items-center justify-center gap-3 py-2 px-4">
             {!menuRated ? (
               <>
-                <img src="/guu-taro.jpg" alt="" className="w-5 h-5 rounded-full object-cover" />
-                <span className="text-[11px] text-[#F5EDE3] font-medium">How's the photo menu?</span>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => onMenuRate(star)}
-                    onMouseEnter={() => onMenuHover?.(star)}
-                    onMouseLeave={() => onMenuHover?.(0)}
-                    className="p-0.5 transition-transform active:scale-125"
-                  >
-                    <Star
-                      size={20}
-                      className={
-                        star <= menuHoveredStar
-                          ? "text-[#B8D435] fill-[#B8D435]"
-                          : "text-[#8B7355]"
-                      }
-                    />
-                  </button>
-                ))}
+                <span className="text-[11px] text-[#F5EDE3]">How's the photo menu?</span>
+                <button
+                  onClick={() => onMenuRate(5)}
+                  className="flex items-center gap-1 bg-[#B8D435] text-white text-[11px] font-medium px-3 py-1 rounded-full active:scale-95 transition-transform"
+                >
+                  👍 Good!
+                </button>
+                <button
+                  onClick={() => onMenuRate(2)}
+                  className="flex items-center gap-1 bg-[#8B7355] text-white text-[11px] font-medium px-3 py-1 rounded-full active:scale-95 transition-transform"
+                >
+                  👎 Meh
+                </button>
                 <button
                   onClick={() => setRatingDismissed(true)}
-                  className="ml-1 text-[#8B7355] hover:text-[#F5EDE3] transition-colors"
+                  className="text-[#8B7355] hover:text-[#F5EDE3] transition-colors"
                   aria-label="Close"
                 >
                   <span className="text-sm leading-none">&times;</span>
