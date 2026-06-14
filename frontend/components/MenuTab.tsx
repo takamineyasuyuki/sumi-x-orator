@@ -99,7 +99,7 @@ export default function MenuTab({ regular, special, availability, onAskAbout, on
         next.add(name);
         onSaveItem?.(name);
       }
-      try { localStorage.setItem("guu_saved", JSON.stringify([...next])); } catch {}
+      try { localStorage.setItem("guu_saved", JSON.stringify(Array.from(next))); } catch {}
       return next;
     });
   }, [onSaveItem]);
