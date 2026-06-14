@@ -407,6 +407,10 @@ export default function Home() {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [sttLang]);
 
+  const handleSaveItem = useCallback((itemName: string) => {
+    trackEvent("menu_save", itemName, sttLang);
+  }, [sttLang]);
+
   // ------------------------------------------------------------------
   // Voice recording
   // ------------------------------------------------------------------
@@ -657,6 +661,7 @@ export default function Home() {
           special={menuSpecial}
           availability={availability}
           onAskAbout={handleAskAbout}
+          onSaveItem={handleSaveItem}
           menuRated={menuRated}
           menuHoveredStar={menuHoveredStar}
           onMenuRate={submitMenuRating}

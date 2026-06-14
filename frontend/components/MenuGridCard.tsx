@@ -1,3 +1,5 @@
+import { Bookmark } from "lucide-react";
+
 interface MenuItem {
   "メニュー名(英)": string;
   "メニュー名(日)"?: string;
@@ -13,23 +15,22 @@ interface MenuGridCardProps {
   item: MenuItem;
   soldOut?: boolean;
   recommended?: boolean;
+  saved?: boolean;
   onTap?: () => void;
+  onSave?: () => void;
 }
 
 const DRINK_CATEGORIES = new Set(["ビール", "ハードリカー", "焼酎", "サングリア", "カクテル", "ソフトドリンク"]);
 
-export default function MenuGridCard({ item, soldOut, recommended, onTap }: MenuGridCardProps) {
+export default function MenuGridCard({ item, soldOut, recommended, saved, onTap, onSave }: MenuGridCardProps) {
   const isDrink = DRINK_CATEGORIES.has(item.カテゴリ || "");
 
   return (
-    <button
-      onClick={onTap}
-      className={`w-full text-left rounded-xl overflow-hidden relative shadow-sm transition-transform active:scale-[0.98] ${
-        soldOut
-          ? "bg-[#EDE4D8]/60 border border-[#D4C4AE]/50 opacity-50"
-          : "bg-[#FFF9F0] border border-[#D4C4AE]"
-      }`}
-    >
+    <div className={`relative w-full rounded-xl overflow-hidden shadow-sm ${
+      soldOut
+        ? "bg-[#EDE4D8]/60 border border-[#D4C4AE]/50 opacity-50"
+        : "bg-[#FFF9F0] border border-[#D4C4AE]"
+    }`}>
       {soldOut && (
         <div className="absolute inset-0 flex items-center justify-center z-10">
           <span className="bg-[#C0392B]/90 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full -rotate-12">
@@ -37,38 +38,56 @@ export default function MenuGridCard({ item, soldOut, recommended, onTap }: Menu
           </span>
         </div>
       )}
-      {item["写真URL"] ? (
-        <div className={`w-full h-28 overflow-hidden ${isDrink ? "bg-[#EDE4D8]" : ""}`}>
-          <img
-            src={item["写真URL"]}
-            alt={item["メニュー名(英)"]}
-            loading="lazy"
-            decoding="async"
-            className={`w-full h-full ${isDrink ? "object-contain p-1" : "object-cover"}`}
+      {/* Save button */}
+      {onSave && !soldOut && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onSave(); }}
+          className="absolute top-2 right-2 z-10 p-1 rounded-full bg-black/30 backdrop-blur-sm active:scale-90 transition-transform"
+          aria-label={saved ? "Remove from saved" : "Save for later"}
+        >
+          <Bookmark
+            size={14}
+            className={saved ? "text-[#B8D435] fill-[#B8D435]" : "text-white"}
           />
-        </div>
-      ) : (
-        <div className="w-full h-20 bg-[#EDE4D8] flex items-center justify-center">
-          <span className="text-2xl opacity-30">
-            {item.カテゴリ === "ドリンク" || item.カテゴリ === "Drink" ? "🍶" : "🍽"}
-          </span>
-        </div>
+        </button>
       )}
-      <div className="p-3 space-y-1">
-        <h3 className="text-xs font-medium text-[#3D2B1F] leading-tight">{item["メニュー名(英)"]}</h3>
-        {item["メニュー名(日)"] && (
-          <p className="text-[10px] text-[#8B7355]">{item["メニュー名(日)"]}</p>
+      <button
+        onClick={onTap}
+        className="w-full text-left transition-transform active:scale-[0.98]"
+      >
+        {item["写真URL"] ? (
+          <div className={`w-full h-28 overflow-hidden ${isDrink ? "bg-[#EDE4D8]" : ""}`}>
+            <img
+              src={item["写真URL"]}
+              alt={item["メニュー名(英)"]}
+              loading="lazy"
+              decoding="async"
+              className={`w-full h-full ${isDrink ? "object-contain p-1" : "object-cover"}`}
+            />
+          </div>
+        ) : (
+          <div className="w-full h-20 bg-[#EDE4D8] flex items-center justify-center">
+            <span className="text-2xl opacity-30">
+              {item.カテゴリ === "ドリンク" || item.カテゴリ === "Drink" ? "🍶" : "🍽"}
+            </span>
+          </div>
         )}
-        {item.担当シェフ名 && (
-          <p className="text-[9px] text-[#B8D435] font-medium">Chef: {item.担当シェフ名}</p>
-        )}
-        <div className="flex items-center justify-between pt-1">
-          {item.値段 > 0 && (
-            <span className="text-xs text-[#3D2B1F] font-medium">${item.値段}</span>
+        <div className="p-3 space-y-1">
+          <h3 className="text-xs font-medium text-[#3D2B1F] leading-tight">{item["メニュー名(英)"]}</h3>
+          {item["メニュー名(日)"] && (
+            <p className="text-[10px] text-[#8B7355]">{item["メニュー名(日)"]}</p>
           )}
-          <span className="text-[9px] text-[#B8D435] font-medium">Ask Guu-taro →</span>
+          {item.担当シェフ名 && (
+            <p className="text-[9px] text-[#B8D435] font-medium">Chef: {item.担当シェフ名}</p>
+          )}
+          <div className="flex items-center justify-between pt-1">
+            {item.値段 > 0 && (
+              <span className="text-xs text-[#3D2B1F] font-medium">${item.値段}</span>
+            )}
+            <span className="text-[9px] text-[#B8D435] font-medium">Ask Guu-taro →</span>
+          </div>
         </div>
-      </div>
-    </button>
+      </button>
+    </div>
   );
 }

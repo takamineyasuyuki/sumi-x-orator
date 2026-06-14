@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Star } from "lucide-react";
+import { Star, Bookmark } from "lucide-react";
 import MenuGridCard from "./MenuGridCard";
 
 interface MenuItem {
@@ -26,6 +26,7 @@ interface MenuTabProps {
   special: MenuItem[];
   availability: AvailabilityItem[];
   onAskAbout: (itemName: string) => void;
+  onSaveItem?: (itemName: string) => void;
   menuRated?: boolean;
   menuHoveredStar?: number;
   onMenuRate?: (rating: number) => void;
@@ -75,12 +76,33 @@ function isLunchTimeNow(): boolean {
   return totalMinutes >= 690 && totalMinutes < 840; // 11:30 - 14:00
 }
 
-export default function MenuTab({ regular, special, availability, onAskAbout, menuRated, menuHoveredStar = 0, onMenuRate, onMenuHover }: MenuTabProps) {
+export default function MenuTab({ regular, special, availability, onAskAbout, onSaveItem, menuRated, menuHoveredStar = 0, onMenuRate, onMenuHover }: MenuTabProps) {
   const [isLunch, setIsLunch] = useState(isLunchTimeNow);
   const [menuMode, setMenuMode] = useState<"lunch" | "dinner">(isLunchTimeNow() ? "lunch" : "dinner");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [ratingDismissed, setRatingDismissed] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
+  const [savedItems, setSavedItems] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("guu_saved");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+  const [showSaved, setShowSaved] = useState(false);
+
+  const toggleSave = useCallback((name: string) => {
+    setSavedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+        onSaveItem?.(name);
+      }
+      try { localStorage.setItem("guu_saved", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, [onSaveItem]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -196,12 +218,25 @@ export default function MenuTab({ regular, special, availability, onAskAbout, me
       {/* Category navigation bar */}
       <div className="flex-shrink-0 border-b border-[#D4C4AE] bg-[#F5EDE3]">
         <div className="flex overflow-x-auto gap-1 px-3 py-2 no-scrollbar">
+          {savedItems.size > 0 && (
+            <button
+              onClick={() => { setShowSaved(!showSaved); setActiveCategory(null); }}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors flex items-center gap-1 ${
+                showSaved
+                  ? "bg-[#B8D435] text-white"
+                  : "bg-[#3D2B1F] text-[#F5EDE3]"
+              }`}
+            >
+              <Bookmark size={10} className={showSaved ? "fill-white" : "fill-[#F5EDE3]"} />
+              Saved ({savedItems.size})
+            </button>
+          )}
           {allCategories.map((cat) => (
             <button
               key={cat}
-              onClick={() => scrollToCategory(cat)}
+              onClick={() => { setShowSaved(false); scrollToCategory(cat); }}
               className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
-                activeCategory === cat
+                !showSaved && activeCategory === cat
                   ? "bg-[#B8D435] text-white"
                   : "bg-[#EDE4D8] text-[#8B7355]"
               }`}
@@ -214,51 +249,80 @@ export default function MenuTab({ regular, special, availability, onAskAbout, me
 
       {/* Menu content */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
-        {/* Lunch / Dinner toggle */}
-        <div className="flex justify-center gap-2">
-          <button
-            onClick={() => setMenuMode("lunch")}
-            className={`text-[11px] font-medium px-4 py-1.5 rounded-full transition-colors ${
-              menuMode === "lunch"
-                ? "bg-[#3D2B1F] text-[#F5EDE3]"
-                : "bg-[#EDE4D8] text-[#8B7355]"
-            }`}
-          >
-            Lunch
-          </button>
-          <button
-            onClick={() => setMenuMode("dinner")}
-            className={`text-[11px] font-medium px-4 py-1.5 rounded-full transition-colors ${
-              menuMode === "dinner"
-                ? "bg-[#3D2B1F] text-[#F5EDE3]"
-                : "bg-[#EDE4D8] text-[#8B7355]"
-            }`}
-          >
-            Dinner
-          </button>
-        </div>
-
-        {/* Regular menu by category */}
-        {grouped.map(([category, items]) => (
-          <section key={category} ref={(el) => { sectionRefs.current[category] = el; }}>
+        {showSaved ? (
+          /* Saved items view */
+          <section>
             <h2 className="text-xs font-bold text-[#8B7355] uppercase tracking-wider mb-3 px-1">
-              {getCategoryLabel(category)}
+              Saved Items
             </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {items.map((item) => (
-                <MenuGridCard
-                  key={item["メニュー名(英)"]}
-                  item={item}
-                  soldOut={!isAvailable(item["メニュー名(英)"])}
-                  recommended={
-                    String(item.おすすめフラグ ?? "").toUpperCase() === "TRUE" || item.おすすめフラグ === true
-                  }
-                  onTap={() => onAskAbout(item["メニュー名(英)"])}
-                />
-              ))}
-            </div>
+            {savedItems.size === 0 ? (
+              <p className="text-sm text-[#8B7355] text-center py-8">No saved items yet</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {regular.filter((item) => savedItems.has(item["メニュー名(英)"])).map((item) => (
+                  <MenuGridCard
+                    key={item["メニュー名(英)"]}
+                    item={item}
+                    soldOut={!isAvailable(item["メニュー名(英)"])}
+                    saved={true}
+                    onTap={() => onAskAbout(item["メニュー名(英)"])}
+                    onSave={() => toggleSave(item["メニュー名(英)"])}
+                  />
+                ))}
+              </div>
+            )}
           </section>
-        ))}
+        ) : (
+          <>
+            {/* Lunch / Dinner toggle */}
+            <div className="flex justify-center gap-2">
+              <button
+                onClick={() => setMenuMode("lunch")}
+                className={`text-[11px] font-medium px-4 py-1.5 rounded-full transition-colors ${
+                  menuMode === "lunch"
+                    ? "bg-[#3D2B1F] text-[#F5EDE3]"
+                    : "bg-[#EDE4D8] text-[#8B7355]"
+                }`}
+              >
+                Lunch
+              </button>
+              <button
+                onClick={() => setMenuMode("dinner")}
+                className={`text-[11px] font-medium px-4 py-1.5 rounded-full transition-colors ${
+                  menuMode === "dinner"
+                    ? "bg-[#3D2B1F] text-[#F5EDE3]"
+                    : "bg-[#EDE4D8] text-[#8B7355]"
+                }`}
+              >
+                Dinner
+              </button>
+            </div>
+
+            {/* Regular menu by category */}
+            {grouped.map(([category, items]) => (
+              <section key={category} ref={(el) => { sectionRefs.current[category] = el; }}>
+                <h2 className="text-xs font-bold text-[#8B7355] uppercase tracking-wider mb-3 px-1">
+                  {getCategoryLabel(category)}
+                </h2>
+                <div className="grid grid-cols-2 gap-3">
+                  {items.map((item) => (
+                    <MenuGridCard
+                      key={item["メニュー名(英)"]}
+                      item={item}
+                      soldOut={!isAvailable(item["メニュー名(英)"])}
+                      recommended={
+                        String(item.おすすめフラグ ?? "").toUpperCase() === "TRUE" || item.おすすめフラグ === true
+                      }
+                      saved={savedItems.has(item["メニュー名(英)"])}
+                      onTap={() => onAskAbout(item["メニュー名(英)"])}
+                      onSave={() => toggleSave(item["メニュー名(英)"])}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </>
+        )}
       </div>
 
       {/* Menu Rating - fixed bottom bar */}
