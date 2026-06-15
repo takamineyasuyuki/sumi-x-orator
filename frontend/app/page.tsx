@@ -375,6 +375,7 @@ export default function Home() {
         };
         setMessages((prev) => [...prev, aiMsg]);
         setBackendDown(false);
+        trackEvent("chat_reply", data.reply.slice(0, 300), sttLang);
       } catch (err) {
         const isRateLimit = err instanceof Error && err.message === "RATE_LIMIT";
         if (!isRateLimit) setBackendDown(true);
