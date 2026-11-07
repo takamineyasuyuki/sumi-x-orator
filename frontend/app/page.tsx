@@ -667,6 +667,8 @@ export default function Home() {
           menuHoveredStar={menuHoveredStar}
           onMenuRate={submitMenuRating}
           onMenuHover={setMenuHoveredStar}
+          lang={sttLang}
+          onMissionDone={(romaji) => trackEvent("mission_done", romaji, sttLang)}
         />
       </div>
 
