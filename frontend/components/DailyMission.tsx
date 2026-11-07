@@ -97,12 +97,12 @@ const MISSIONS: Mission[] = [
 ];
 
 const LABELS: Record<string, { title: string; done: string; doneThanks: string }> = {
-  "en-US": { title: "Today's Mission", done: "I did it!", doneThanks: "Sugoi! Mission complete 🎉" },
-  "ja-JP": { title: "今日のミッション", done: "やった！", doneThanks: "すごい！ミッション達成 🎉" },
-  "ko-KR": { title: "오늘의 미션", done: "성공!", doneThanks: "Sugoi! 미션 완료 🎉" },
-  "zh-CN": { title: "今日任务", done: "完成了！", doneThanks: "Sugoi! 任务完成 🎉" },
-  "es-ES": { title: "Misión del día", done: "¡Lo hice!", doneThanks: "¡Sugoi! Misión cumplida 🎉" },
-  "pt-BR": { title: "Missão do dia", done: "Consegui!", doneThanks: "Sugoi! Missão cumprida 🎉" },
+  "en-US": { title: "Today's Japanese Mission", done: "I did it!", doneThanks: "Sugoi! Mission complete 🎉" },
+  "ja-JP": { title: "今日の日本語ミッション", done: "やった！", doneThanks: "すごい！ミッション達成 🎉" },
+  "ko-KR": { title: "오늘의 일본어 미션", done: "성공!", doneThanks: "Sugoi! 미션 완료 🎉" },
+  "zh-CN": { title: "今日日语任务", done: "完成了！", doneThanks: "Sugoi! 任务完成 🎉" },
+  "es-ES": { title: "Misión de japonés del día", done: "¡Lo hice!", doneThanks: "¡Sugoi! Misión cumplida 🎉" },
+  "pt-BR": { title: "Missão de japonês do dia", done: "Consegui!", doneThanks: "Sugoi! Missão cumprida 🎉" },
 };
 
 /** Vancouver calendar date, so every guest on the same day sees the same mission. */
