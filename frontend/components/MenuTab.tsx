@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Star, Bookmark } from "lucide-react";
 import MenuGridCard from "./MenuGridCard";
-import DailyMission from "./DailyMission";
+import DailyMission, { type MissionEvent } from "./DailyMission";
 
 interface MenuItem {
   "メニュー名(英)": string;
@@ -33,7 +33,7 @@ interface MenuTabProps {
   onMenuRate?: (rating: number) => void;
   onMenuHover?: (star: number) => void;
   lang?: string;
-  onMissionDone?: (romaji: string) => void;
+  onMissionEvent?: (event: MissionEvent, romaji: string) => void;
 }
 
 const CATEGORY_ORDER = [
@@ -79,7 +79,7 @@ function isLunchTimeNow(): boolean {
   return totalMinutes >= 690 && totalMinutes < 840; // 11:30 - 14:00
 }
 
-export default function MenuTab({ regular, special, availability, onAskAbout, onSaveItem, menuRated, menuHoveredStar = 0, onMenuRate, onMenuHover, lang = "en-US", onMissionDone }: MenuTabProps) {
+export default function MenuTab({ regular, special, availability, onAskAbout, onSaveItem, menuRated, menuHoveredStar = 0, onMenuRate, onMenuHover, lang = "en-US", onMissionEvent }: MenuTabProps) {
   const [isLunch, setIsLunch] = useState(isLunchTimeNow);
   const [menuMode, setMenuMode] = useState<"lunch" | "dinner">(isLunchTimeNow() ? "lunch" : "dinner");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -277,7 +277,7 @@ export default function MenuTab({ regular, special, availability, onAskAbout, on
           </section>
         ) : (
           <>
-            <DailyMission lang={lang} onDone={onMissionDone} />
+            <DailyMission lang={lang} onEvent={onMissionEvent} />
 
             {/* Lunch / Dinner toggle */}
             <div className="flex justify-center gap-2">

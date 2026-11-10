@@ -387,7 +387,8 @@ async def translate_messages(request: Request, req: TranslateRequest):
 async def track_analytics(request: Request, req: AnalyticsRequest):
     if not db:
         raise HTTPException(status_code=503, detail="Database not connected")
-    if req.event not in ("page_view", "chat_message", "menu_tap", "menu_save", "chat_reply", "mission_done"):
+    if req.event not in ("page_view", "chat_message", "menu_tap", "menu_save", "chat_reply",
+                         "mission_done", "mission_speak", "mission_dismiss"):
         raise HTTPException(status_code=400, detail="Invalid event type")
     ua = request.headers.get("user-agent", "")[:200]
     db.save_analytics(req.session_id, req.event, req.data, req.lang, ua)

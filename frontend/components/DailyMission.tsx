@@ -115,12 +115,14 @@ function missionForDate(date: string): Mission {
   return MISSIONS[((days % MISSIONS.length) + MISSIONS.length) % MISSIONS.length];
 }
 
+export type MissionEvent = "mission_done" | "mission_speak" | "mission_dismiss";
+
 interface DailyMissionProps {
   lang: string;
-  onDone?: (romaji: string) => void;
+  onEvent?: (event: MissionEvent, romaji: string) => void;
 }
 
-export default function DailyMission({ lang, onDone }: DailyMissionProps) {
+export default function DailyMission({ lang, onEvent }: DailyMissionProps) {
   const [today, setToday] = useState(vancouverDate);
   const [dismissed, setDismissed] = useState(false);
   const [done, setDone] = useState(false);
@@ -153,17 +155,19 @@ export default function DailyMission({ lang, onDone }: DailyMissionProps) {
       u.rate = 0.9;
       window.speechSynthesis.speak(u);
     } catch {}
+    onEvent?.("mission_speak", mission.romaji);
   };
 
   const markDone = () => {
     setDone(true);
     try { localStorage.setItem("guu_mission_done", today); } catch {}
-    onDone?.(mission.romaji);
+    onEvent?.("mission_done", mission.romaji);
   };
 
   const dismiss = () => {
     setDismissed(true);
     try { localStorage.setItem("guu_mission_dismissed", today); } catch {}
+    onEvent?.("mission_dismiss", mission.romaji);
   };
 
   return (
