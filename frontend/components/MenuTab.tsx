@@ -32,9 +32,12 @@ interface MenuTabProps {
   menuHoveredStar?: number;
   onMenuRate?: (rating: number) => void;
   onMenuHover?: (star: number) => void;
+  onMenuBadReason?: (reason: string) => void;
   lang?: string;
   onMissionEvent?: (event: MissionEvent, romaji: string) => void;
 }
+
+const BAD_REASONS = ["Missing photos", "Hard to find dishes", "Slow to load", "Wrong price or info", "Other"];
 
 const CATEGORY_ORDER = [
   // Dinner
@@ -79,11 +82,13 @@ function isLunchTimeNow(): boolean {
   return totalMinutes >= 690 && totalMinutes < 840; // 11:30 - 14:00
 }
 
-export default function MenuTab({ regular, special, availability, onAskAbout, onSaveItem, menuRated, menuHoveredStar = 0, onMenuRate, onMenuHover, lang = "en-US", onMissionEvent }: MenuTabProps) {
+export default function MenuTab({ regular, special, availability, onAskAbout, onSaveItem, menuRated, menuHoveredStar = 0, onMenuRate, onMenuHover, onMenuBadReason, lang = "en-US", onMissionEvent }: MenuTabProps) {
   const [isLunch, setIsLunch] = useState(isLunchTimeNow);
   const [menuMode, setMenuMode] = useState<"lunch" | "dinner">(isLunchTimeNow() ? "lunch" : "dinner");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [ratingDismissed, setRatingDismissed] = useState(false);
+  // After a 👎, ask why: "asking" shows the reason chips, "sent" shows the thanks
+  const [badReasonStep, setBadReasonStep] = useState<"none" | "asking" | "sent">("none");
   const [hasScrolled, setHasScrolled] = useState(false);
   const [savedItems, setSavedItems] = useState<Set<string>>(() => {
     try {
@@ -344,7 +349,7 @@ export default function MenuTab({ regular, special, availability, onAskAbout, on
                   👍 Good!
                 </button>
                 <button
-                  onClick={() => onMenuRate(2)}
+                  onClick={() => { onMenuRate(2); setBadReasonStep("asking"); }}
                   className="flex items-center gap-1 bg-[#8B7355] text-white text-[11px] font-medium px-3 py-1 rounded-full active:scale-95 transition-transform"
                 >
                   👎 Meh
@@ -357,6 +362,30 @@ export default function MenuTab({ regular, special, availability, onAskAbout, on
                   <span className="text-sm leading-none">&times;</span>
                 </button>
               </>
+            ) : badReasonStep === "asking" ? (
+              <div className="flex flex-col items-center gap-2 w-full">
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] text-[#F5EDE3]">What could be better?</span>
+                  <button
+                    onClick={() => setRatingDismissed(true)}
+                    className="text-[#8B7355] hover:text-[#F5EDE3] transition-colors"
+                    aria-label="Close"
+                  >
+                    <span className="text-sm leading-none">&times;</span>
+                  </button>
+                </div>
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {BAD_REASONS.map((reason) => (
+                    <button
+                      key={reason}
+                      onClick={() => { onMenuBadReason?.(reason); setBadReasonStep("sent"); }}
+                      className="bg-[#8B7355] text-white text-[11px] font-medium px-3 py-1 rounded-full active:scale-95 transition-transform"
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ) : (
               <span className="text-[11px] text-[#B8D435] font-medium" ref={(el) => {
                 if (el) setTimeout(() => setRatingDismissed(true), 2000);

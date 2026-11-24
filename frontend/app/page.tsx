@@ -667,6 +667,7 @@ export default function Home() {
           menuHoveredStar={menuHoveredStar}
           onMenuRate={submitMenuRating}
           onMenuHover={setMenuHoveredStar}
+          onMenuBadReason={(reason) => trackEvent("menu_bad_reason", reason, sttLang)}
           lang={sttLang}
           onMissionEvent={(event, romaji) => trackEvent(event, romaji, sttLang)}
         />
